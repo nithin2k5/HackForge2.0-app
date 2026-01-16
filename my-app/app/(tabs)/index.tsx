@@ -78,7 +78,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.logoContainer}>
-            <Ionicons name="briefcase" size={24} color="#041F2B" />
+            <Ionicons name="briefcase" size={22} color="#041F2B" />
           </View>
           <Text style={styles.logoText}>GROEI</Text>
         </View>
@@ -296,15 +296,17 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-start',
   },
   logoContainer: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#e8f4f8',
+    backgroundColor: '#f0f0f0',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    padding: 0,
   },
   logoText: {
     fontSize: 26,

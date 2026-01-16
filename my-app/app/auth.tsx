@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions } from 'react-native';
+import { useState, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
@@ -16,8 +17,15 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
   const router = useRouter();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const nameInputRef = useRef<TextInput>(null);
+  const emailInputRef = useRef<TextInput>(null);
+  const passwordInputRef = useRef<TextInput>(null);
+  const inputLayouts = useRef<{ [key: string]: number }>({});
 
   const handleSubmit = async () => {
+    if (loading) return;
+    
     if (!email || !password || (!isLogin && !name)) {
       return;
     }
@@ -25,19 +33,34 @@ export default function AuthScreen() {
     setLoading(true);
     
     setTimeout(() => {
-      signIn();
       setLoading(false);
-      router.replace('/(tabs)');
+      if (isLogin) {
+        signIn();
+        router.replace('/(tabs)');
+      } else {
+        router.push({
+          pathname: '/otp-verification',
+          params: { email },
+        });
+      }
     }, 1500);
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-    >
-      <View style={styles.content}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView
+          ref={scrollViewRef}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+        >
+          <View style={styles.content}>
         <View style={[styles.header, isSmallScreen && styles.headerSmall]}>
           <View style={[styles.logoContainer, isSmallScreen && styles.logoContainerSmall]}>
             <Ionicons name="briefcase" size={isSmallScreen ? 24 : 28} color="#041F2B" />
@@ -78,9 +101,15 @@ export default function AuthScreen() {
             </Text>
 
             {!isLogin && (
-              <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
+              <View
+                style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}
+                onLayout={(e) => {
+                  inputLayouts.current['name'] = e.nativeEvent.layout.y;
+                }}
+              >
                 <Ionicons name="person-outline" size={isSmallScreen ? 18 : 20} color="#4a5568" style={styles.inputIcon} />
                 <TextInput
+                  ref={nameInputRef}
                   style={[styles.input, isSmallScreen && styles.inputSmall]}
                   placeholder="Full Name"
                   placeholderTextColor="#a0aec0"
@@ -88,13 +117,27 @@ export default function AuthScreen() {
                   onChangeText={setName}
                   autoCapitalize="words"
                   editable={!loading}
+                  onFocus={() => {
+                    setTimeout(() => {
+                      const y = inputLayouts.current['name'];
+                      if (y !== undefined && scrollViewRef.current) {
+                        scrollViewRef.current.scrollTo({ y: Math.max(0, y - 150), animated: true });
+                      }
+                    }, 100);
+                  }}
                 />
               </View>
             )}
 
-            <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
+            <View
+              style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}
+              onLayout={(e) => {
+                inputLayouts.current['email'] = e.nativeEvent.layout.y;
+              }}
+            >
               <Ionicons name="mail-outline" size={isSmallScreen ? 18 : 20} color="#4a5568" style={styles.inputIcon} />
               <TextInput
+                ref={emailInputRef}
                 style={[styles.input, isSmallScreen && styles.inputSmall]}
                 placeholder="Email Address"
                 placeholderTextColor="#a0aec0"
@@ -104,12 +147,26 @@ export default function AuthScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
                 editable={!loading}
+                onFocus={() => {
+                  setTimeout(() => {
+                    const y = inputLayouts.current['email'];
+                    if (y !== undefined && scrollViewRef.current) {
+                      scrollViewRef.current.scrollTo({ y: Math.max(0, y - 150), animated: true });
+                    }
+                  }, 100);
+                }}
               />
             </View>
 
-            <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
+            <View
+              style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}
+              onLayout={(e) => {
+                inputLayouts.current['password'] = e.nativeEvent.layout.y;
+              }}
+            >
               <Ionicons name="lock-closed-outline" size={isSmallScreen ? 18 : 20} color="#4a5568" style={styles.inputIcon} />
               <TextInput
+                ref={passwordInputRef}
                 style={[styles.input, isSmallScreen && styles.inputSmall]}
                 placeholder="Password"
                 placeholderTextColor="#a0aec0"
@@ -118,6 +175,14 @@ export default function AuthScreen() {
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 editable={!loading}
+                onFocus={() => {
+                  setTimeout(() => {
+                    const y = inputLayouts.current['password'];
+                    if (y !== undefined && scrollViewRef.current) {
+                      scrollViewRef.current.scrollTo({ y: Math.max(0, y - 150), animated: true });
+                    }
+                  }, 100);
+                }}
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
@@ -180,15 +245,25 @@ export default function AuthScreen() {
             </View>
           </View>
         </View>
-      </View>
-    </KeyboardAvoidingView>
+        </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
   },
   content: {
     flex: 1,
@@ -307,24 +382,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
     marginBottom: 12,
-    paddingHorizontal: 16,
+    paddingLeft: 16,
+    paddingRight: 16,
     height: 52,
     minHeight: 52,
+    width: '100%',
   },
   inputContainerSmall: {
     height: 48,
     minHeight: 48,
-    paddingHorizontal: 14,
+    paddingLeft: 14,
+    paddingRight: 14,
     marginBottom: 10,
   },
   inputIcon: {
     marginRight: 12,
+    flexShrink: 0,
   },
   input: {
     flex: 1,
     fontSize: 15,
     color: '#041F2B',
     fontWeight: '500',
+    padding: 0,
+    margin: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   inputSmall: {
     fontSize: 14,
