@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const { width: screenWidth } = Dimensions.get('window');
 const DRAWER_WIDTH = screenWidth * 0.75;
+const isSmallScreen = screenWidth < 375;
 
 export default function DashboardScreen() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -248,8 +249,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: isSmallScreen ? 16 : 20,
+    paddingVertical: isSmallScreen ? 12 : 16,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
@@ -313,14 +314,14 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: isSmallScreen ? 16 : 20,
+    paddingTop: isSmallScreen ? 16 : 20,
   },
   welcomeCard: {
     backgroundColor: '#f8fafb',
     borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
+    padding: isSmallScreen ? 20 : 24,
+    marginBottom: isSmallScreen ? 20 : 24,
   },
   welcomeTitle: {
     fontSize: 28,
@@ -337,17 +338,19 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 24,
+    gap: isSmallScreen ? 12 : 16,
+    marginBottom: isSmallScreen ? 20 : 24,
+    width: '100%',
   },
   statCard: {
     flex: 1,
     backgroundColor: '#ffffff',
     borderRadius: 16,
-    padding: 20,
+    padding: isSmallScreen ? 16 : 20,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     alignItems: 'center',
+    minWidth: 0,
   },
   statNumber: {
     fontSize: 32,
@@ -375,8 +378,8 @@ const styles = StyleSheet.create({
   jobCard: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    padding: isSmallScreen ? 16 : 20,
+    marginBottom: isSmallScreen ? 12 : 16,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     shadowColor: '#041F2B',
@@ -384,6 +387,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+    width: '100%',
   },
   jobHeader: {
     flexDirection: 'row',

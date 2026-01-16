@@ -14,6 +14,7 @@ export default function OTPVerificationScreen() {
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
   const params = useLocalSearchParams();
   const email = params.email as string;
@@ -55,6 +56,14 @@ export default function OTPVerificationScreen() {
     }
   };
 
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleVerify = () => {
     if (loading) return;
     
@@ -63,14 +72,19 @@ export default function OTPVerificationScreen() {
       return;
     }
 
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
     setLoading(true);
-    setTimeout(() => {
+    timeoutRef.current = setTimeout(() => {
       setLoading(false);
       signIn();
       router.replace({
         pathname: '/profile-setup',
         params: { email },
       });
+      timeoutRef.current = null;
     }, 1500);
   };
 
@@ -151,7 +165,9 @@ export default function OTPVerificationScreen() {
               {otp.map((digit, index) => (
                 <TextInput
                   key={index}
-                  ref={(ref) => (inputRefs.current[index] = ref)}
+                  ref={(ref) => {
+                    inputRefs.current[index] = ref;
+                  }}
                   style={[
                     styles.otpInput,
                     isSmallScreen && styles.otpInputSmall,

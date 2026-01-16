@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +23,16 @@ export default function AuthScreen() {
   const passwordInputRef = useRef<TextInput>(null);
   const inputLayouts = useRef<{ [key: string]: number }>({});
 
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleSubmit = async () => {
     if (loading) return;
     
@@ -30,9 +40,13 @@ export default function AuthScreen() {
       return;
     }
 
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
     setLoading(true);
     
-    setTimeout(() => {
+    timeoutRef.current = setTimeout(() => {
       setLoading(false);
       if (isLogin) {
         signIn();
@@ -43,6 +57,7 @@ export default function AuthScreen() {
           params: { email },
         });
       }
+      timeoutRef.current = null;
     }, 1500);
   };
 
@@ -308,11 +323,11 @@ const styles = StyleSheet.create({
   },
   authContainer: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: isSmallScreen ? 16 : 24,
     justifyContent: 'center',
   },
   authContainerSmall: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   toggleContainer: {
     flexDirection: 'row',
