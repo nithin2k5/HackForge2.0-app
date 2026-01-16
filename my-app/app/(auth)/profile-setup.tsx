@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { COLORS } from '@/constants/colors';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
@@ -136,7 +137,7 @@ export default function ProfileSetupScreen() {
           <View style={styles.stepContent}>
             <View style={styles.titleSection}>
               <View style={styles.titleIconContainer}>
-                <Ionicons name="person" size={32} color="#041F2B" />
+                <Ionicons name="person" size={32} color={COLORS.PRIMARY} />
               </View>
               <Text style={[styles.stepTitle, isSmallScreen && styles.stepTitleSmall]}>
                 PERSONAL INFORMATION
@@ -153,11 +154,11 @@ export default function ProfileSetupScreen() {
               >
                 <Text style={styles.inputLabel}>Full Name</Text>
                 <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="person-outline" size={20} color="#4a5568" style={styles.inputIcon} />
+                  <Ionicons name="person-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, isSmallScreen && styles.inputSmall]}
                     placeholder="Enter your full name"
-                    placeholderTextColor="#a0aec0"
+                    placeholderTextColor={COLORS.TEXT_SECONDARY}
                     value={formData.fullName}
                     onChangeText={(value) => setFormData({ ...formData, fullName: value })}
                     autoCapitalize="words"
@@ -173,11 +174,11 @@ export default function ProfileSetupScreen() {
               >
                 <Text style={styles.inputLabel}>Phone Number</Text>
                 <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="call-outline" size={20} color="#4a5568" style={styles.inputIcon} />
+                  <Ionicons name="call-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, isSmallScreen && styles.inputSmall]}
                     placeholder="Enter your phone number"
-                    placeholderTextColor="#a0aec0"
+                    placeholderTextColor={COLORS.TEXT_SECONDARY}
                     value={formData.phone}
                     onChangeText={(value) => setFormData({ ...formData, phone: value })}
                     keyboardType="phone-pad"
@@ -193,11 +194,11 @@ export default function ProfileSetupScreen() {
               >
                 <Text style={styles.inputLabel}>Location</Text>
                 <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="location-outline" size={20} color="#4a5568" style={styles.inputIcon} />
+                  <Ionicons name="location-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, isSmallScreen && styles.inputSmall]}
                     placeholder="City, Country"
-                    placeholderTextColor="#a0aec0"
+                    placeholderTextColor={COLORS.TEXT_SECONDARY}
                     value={formData.location}
                     onChangeText={(value) => setFormData({ ...formData, location: value })}
                     editable={!loading}
@@ -212,11 +213,11 @@ export default function ProfileSetupScreen() {
               >
                 <Text style={styles.inputLabel}>Languages</Text>
                 <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="language-outline" size={20} color="#4a5568" style={styles.inputIcon} />
+                  <Ionicons name="language-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, isSmallScreen && styles.inputSmall]}
                     placeholder="English, Spanish, French..."
-                    placeholderTextColor="#a0aec0"
+                    placeholderTextColor={COLORS.TEXT_SECONDARY}
                     value={formData.languages}
                     onChangeText={(value) => setFormData({ ...formData, languages: value })}
                     editable={!loading}
@@ -233,7 +234,7 @@ export default function ProfileSetupScreen() {
           <View style={styles.stepContent}>
             <View style={styles.titleSection}>
               <View style={styles.titleIconContainer}>
-                <Ionicons name="briefcase" size={32} color="#041F2B" />
+                <Ionicons name="briefcase" size={32} color={COLORS.PRIMARY} />
               </View>
               <Text style={[styles.stepTitle, isSmallScreen && styles.stepTitleSmall]}>
                 EXPERIENCE & SKILLS
@@ -250,11 +251,11 @@ export default function ProfileSetupScreen() {
               >
                 <Text style={styles.inputLabel}>Years of Experience</Text>
                 <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="time-outline" size={20} color="#4a5568" style={styles.inputIcon} />
+                  <Ionicons name="time-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, isSmallScreen && styles.inputSmall]}
                     placeholder="e.g., 5"
-                    placeholderTextColor="#a0aec0"
+                    placeholderTextColor={COLORS.TEXT_SECONDARY}
                     value={formData.experience}
                     onChangeText={(value) => setFormData({ ...formData, experience: value })}
                     keyboardType="number-pad"
@@ -270,11 +271,11 @@ export default function ProfileSetupScreen() {
               >
                 <Text style={styles.inputLabel}>Current Position</Text>
                 <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="briefcase-outline" size={20} color="#4a5568" style={styles.inputIcon} />
+                  <Ionicons name="briefcase-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, isSmallScreen && styles.inputSmall]}
                     placeholder="Your current job title"
-                    placeholderTextColor="#a0aec0"
+                    placeholderTextColor={COLORS.TEXT_SECONDARY}
                     value={formData.currentPosition}
                     onChangeText={(value) => setFormData({ ...formData, currentPosition: value })}
                     editable={!loading}
@@ -289,11 +290,11 @@ export default function ProfileSetupScreen() {
               >
                 <Text style={styles.inputLabel}>Skills</Text>
                 <View style={[styles.textAreaContainer, isSmallScreen && styles.textAreaContainerSmall]}>
-                  <Ionicons name="code-outline" size={20} color="#4a5568" style={styles.inputIcon} />
+                  <Ionicons name="code-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.textArea, isSmallScreen && styles.textAreaSmall]}
                     placeholder="React, Node.js, Python, JavaScript..."
-                    placeholderTextColor="#a0aec0"
+                    placeholderTextColor={COLORS.TEXT_SECONDARY}
                     value={formData.skills}
                     onChangeText={(value) => setFormData({ ...formData, skills: value })}
                     multiline
@@ -311,11 +312,11 @@ export default function ProfileSetupScreen() {
               >
                 <Text style={styles.inputLabel}>Education</Text>
                 <View style={[styles.textAreaContainer, isSmallScreen && styles.textAreaContainerSmall]}>
-                  <Ionicons name="school-outline" size={20} color="#4a5568" style={styles.inputIcon} />
+                  <Ionicons name="school-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.textArea, isSmallScreen && styles.textAreaSmall]}
                     placeholder="Degree, University, Year"
-                    placeholderTextColor="#a0aec0"
+                    placeholderTextColor={COLORS.TEXT_SECONDARY}
                     value={formData.education}
                     onChangeText={(value) => setFormData({ ...formData, education: value })}
                     multiline
@@ -333,11 +334,11 @@ export default function ProfileSetupScreen() {
               >
                 <Text style={styles.inputLabel}>LinkedIn Profile <Text style={styles.optionalText}>(Optional)</Text></Text>
                 <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="logo-linkedin" size={20} color="#4a5568" style={styles.inputIcon} />
+                  <Ionicons name="logo-linkedin" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, isSmallScreen && styles.inputSmall]}
                     placeholder="linkedin.com/in/yourprofile"
-                    placeholderTextColor="#a0aec0"
+                    placeholderTextColor={COLORS.TEXT_SECONDARY}
                     value={formData.linkedin}
                     onChangeText={(value) => setFormData({ ...formData, linkedin: value })}
                     keyboardType="url"
@@ -354,11 +355,11 @@ export default function ProfileSetupScreen() {
               >
                 <Text style={styles.inputLabel}>Portfolio/Website <Text style={styles.optionalText}>(Optional)</Text></Text>
                 <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="globe-outline" size={20} color="#4a5568" style={styles.inputIcon} />
+                  <Ionicons name="globe-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, isSmallScreen && styles.inputSmall]}
                     placeholder="yourwebsite.com"
-                    placeholderTextColor="#a0aec0"
+                    placeholderTextColor={COLORS.TEXT_SECONDARY}
                     value={formData.portfolio}
                     onChangeText={(value) => setFormData({ ...formData, portfolio: value })}
                     keyboardType="url"
@@ -377,7 +378,7 @@ export default function ProfileSetupScreen() {
           <View style={styles.stepContent}>
             <View style={styles.titleSection}>
               <View style={styles.titleIconContainer}>
-                <Ionicons name="settings" size={32} color="#041F2B" />
+                <Ionicons name="settings" size={32} color={COLORS.PRIMARY} />
               </View>
               <Text style={[styles.stepTitle, isSmallScreen && styles.stepTitleSmall]}>
                 JOB PREFERENCES
@@ -394,11 +395,11 @@ export default function ProfileSetupScreen() {
               >
                 <Text style={styles.inputLabel}>Job Type</Text>
                 <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="briefcase-outline" size={20} color="#4a5568" style={styles.inputIcon} />
+                  <Ionicons name="briefcase-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, isSmallScreen && styles.inputSmall]}
                     placeholder="Full-time, Part-time, Contract, Freelance"
-                    placeholderTextColor="#a0aec0"
+                    placeholderTextColor={COLORS.TEXT_SECONDARY}
                     value={formData.jobType}
                     onChangeText={(value) => setFormData({ ...formData, jobType: value })}
                     editable={!loading}
@@ -413,11 +414,11 @@ export default function ProfileSetupScreen() {
               >
                 <Text style={styles.inputLabel}>Salary Expectation</Text>
                 <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="cash-outline" size={20} color="#4a5568" style={styles.inputIcon} />
+                  <Ionicons name="cash-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, isSmallScreen && styles.inputSmall]}
                     placeholder="$50k - $70k or Negotiable"
-                    placeholderTextColor="#a0aec0"
+                    placeholderTextColor={COLORS.TEXT_SECONDARY}
                     value={formData.salaryExpectation}
                     onChangeText={(value) => setFormData({ ...formData, salaryExpectation: value })}
                     editable={!loading}
@@ -432,11 +433,11 @@ export default function ProfileSetupScreen() {
               >
                 <Text style={styles.inputLabel}>Availability</Text>
                 <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="calendar-outline" size={20} color="#4a5568" style={styles.inputIcon} />
+                  <Ionicons name="calendar-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, isSmallScreen && styles.inputSmall]}
                     placeholder="Immediately, 2 weeks, 1 month"
-                    placeholderTextColor="#a0aec0"
+                    placeholderTextColor={COLORS.TEXT_SECONDARY}
                     value={formData.availability}
                     onChangeText={(value) => setFormData({ ...formData, availability: value })}
                     editable={!loading}
@@ -451,11 +452,11 @@ export default function ProfileSetupScreen() {
               >
                 <Text style={styles.inputLabel}>Work Location</Text>
                 <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="location-outline" size={20} color="#4a5568" style={styles.inputIcon} />
+                  <Ionicons name="location-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, isSmallScreen && styles.inputSmall]}
                     placeholder="Remote, Hybrid, On-site"
-                    placeholderTextColor="#a0aec0"
+                    placeholderTextColor={COLORS.TEXT_SECONDARY}
                     value={formData.workLocation}
                     onChangeText={(value) => setFormData({ ...formData, workLocation: value })}
                     editable={!loading}
@@ -470,11 +471,11 @@ export default function ProfileSetupScreen() {
               >
                 <Text style={styles.inputLabel}>Work Authorization</Text>
                 <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="document-text-outline" size={20} color="#4a5568" style={styles.inputIcon} />
+                  <Ionicons name="document-text-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, isSmallScreen && styles.inputSmall]}
                     placeholder="US Citizen, H1B, OPT, etc."
-                    placeholderTextColor="#a0aec0"
+                    placeholderTextColor={COLORS.TEXT_SECONDARY}
                     value={formData.workAuthorization}
                     onChangeText={(value) => setFormData({ ...formData, workAuthorization: value })}
                     editable={!loading}
@@ -491,7 +492,7 @@ export default function ProfileSetupScreen() {
           <View style={styles.stepContent}>
             <View style={styles.titleSection}>
               <View style={styles.titleIconContainer}>
-                <Ionicons name="document-text" size={32} color="#041F2B" />
+                <Ionicons name="document-text" size={32} color={COLORS.PRIMARY} />
               </View>
               <Text style={[styles.stepTitle, isSmallScreen && styles.stepTitleSmall]}>
                 UPLOAD RESUME
@@ -510,7 +511,7 @@ export default function ProfileSetupScreen() {
                 {formData.resume ? (
                   <View style={styles.resumeUploaded}>
                     <View style={styles.resumeIconContainer}>
-                      <Ionicons name="checkmark-circle" size={48} color="#041F2B" />
+                      <Ionicons name="checkmark-circle" size={48} color={COLORS.PRIMARY} />
                     </View>
                     <Text style={[styles.resumeText, isSmallScreen && styles.resumeTextSmall]}>
                       {formData.resume}
@@ -522,7 +523,7 @@ export default function ProfileSetupScreen() {
                 ) : (
                   <View style={styles.resumeUploadEmpty}>
                     <View style={styles.resumeIconContainer}>
-                      <Ionicons name="cloud-upload-outline" size={48} color="#041F2B" />
+                      <Ionicons name="cloud-upload-outline" size={48} color={COLORS.PRIMARY} />
                     </View>
                     <Text style={[styles.resumeText, isSmallScreen && styles.resumeTextSmall]}>
                       TAP TO UPLOAD RESUME
@@ -531,7 +532,7 @@ export default function ProfileSetupScreen() {
                       PDF, DOC, DOCX (Max 5MB)
                     </Text>
                     <View style={styles.uploadHint}>
-                      <Ionicons name="information-circle-outline" size={16} color="#4a5568" />
+                      <Ionicons name="information-circle-outline" size={16} color={COLORS.TEXT_SECONDARY} />
                       <Text style={styles.uploadHintText}>Your resume helps us match you with better opportunities</Text>
                     </View>
                   </View>
@@ -563,7 +564,7 @@ export default function ProfileSetupScreen() {
               <Ionicons 
                 name="arrow-back" 
                 size={24} 
-                color={loading || currentStep === 1 ? '#cbd5e0' : '#041F2B'} 
+                color={loading || currentStep === 1 ? '#cbd5e0' : COLORS.PRIMARY} 
               />
             </TouchableOpacity>
             
@@ -595,12 +596,12 @@ export default function ProfileSetupScreen() {
                   ]}
                 >
                   {currentStep > step.number ? (
-                    <Ionicons name="checkmark" size={18} color="#ffffff" />
+                    <Ionicons name="checkmark" size={18} color={COLORS.TEXT_PRIMARY} />
                   ) : (
                     <Ionicons 
                       name={step.icon as any} 
                       size={currentStep === step.number ? 18 : 16} 
-                      color={currentStep >= step.number ? '#ffffff' : '#4a5568'} 
+                      color={currentStep >= step.number ? '#ffffff' : COLORS.TEXT_SECONDARY} 
                     />
                   )}
                 </View>
@@ -634,7 +635,7 @@ export default function ProfileSetupScreen() {
                   onPress={handleBack}
                   disabled={loading}
                 >
-                  <Ionicons name="arrow-back" size={18} color="#041F2B" />
+                  <Ionicons name="arrow-back" size={18} color={COLORS.PRIMARY} />
                   <Text style={[styles.backButtonText, isSmallScreen && styles.backButtonTextSmall]}>
                     BACK
                   </Text>
@@ -650,7 +651,7 @@ export default function ProfileSetupScreen() {
                 disabled={loading}
               >
                 {loading ? (
-                  <ActivityIndicator color="#ffffff" size="small" />
+                  <ActivityIndicator color={COLORS.TEXT_PRIMARY} size="small" />
                 ) : (
                   <>
                     <Text style={[styles.nextButtonText, isSmallScreen && styles.nextButtonTextSmall]}>
@@ -659,7 +660,7 @@ export default function ProfileSetupScreen() {
                     <Ionicons
                       name={currentStep === 4 ? 'checkmark-circle' : 'arrow-forward'}
                       size={isSmallScreen ? 18 : 20}
-                      color="#ffffff"
+                      color={COLORS.TEXT_PRIMARY}
                     />
                   </>
                 )}
@@ -675,16 +676,16 @@ export default function ProfileSetupScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f8fafb',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
   },
   container: {
     flex: 1,
-    backgroundColor: '#f8fafb',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
   },
   header: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: COLORS.BORDER,
     paddingTop: isSmallScreen ? 12 : 16,
     paddingBottom: isSmallScreen ? 16 : 20,
     paddingHorizontal: isSmallScreen ? 16 : 20,
@@ -701,7 +702,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 20,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: COLORS.SECONDARY,
   },
   progressContainer: {
     flex: 1,
@@ -710,20 +711,20 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: isSmallScreen ? 11 : 12,
     fontWeight: '700',
-    color: '#4a5568',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 6,
     textAlign: 'center',
     letterSpacing: 0.5,
   },
   progressBar: {
     height: 4,
-    backgroundColor: '#e2e8f0',
+    borderColor: COLORS.BORDER,
     borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#041F2B',
+    backgroundColor: COLORS.PRIMARY,
     borderRadius: 2,
   },
   headerSpacer: {
@@ -743,15 +744,15 @@ const styles = StyleSheet.create({
     width: isSmallScreen ? 36 : 40,
     height: isSmallScreen ? 36 : 40,
     borderRadius: isSmallScreen ? 18 : 20,
-    backgroundColor: '#f0f7fa',
+    backgroundColor: COLORS.SECONDARY,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: COLORS.BORDER,
     justifyContent: 'center',
     alignItems: 'center',
   },
   stepCircleActive: {
-    backgroundColor: '#041F2B',
-    borderColor: '#041F2B',
+    backgroundColor: COLORS.PRIMARY,
+    borderColor: COLORS.PRIMARY,
   },
   stepCircleCurrent: {
     borderWidth: 3,
@@ -760,11 +761,11 @@ const styles = StyleSheet.create({
   stepConnector: {
     width: isSmallScreen ? 24 : 32,
     height: 2,
-    backgroundColor: '#e2e8f0',
+    borderColor: COLORS.BORDER,
     marginHorizontal: isSmallScreen ? 4 : 6,
   },
   stepConnectorActive: {
-    backgroundColor: '#041F2B',
+    backgroundColor: COLORS.PRIMARY,
   },
   scrollContent: {
     flexGrow: 1,
@@ -786,7 +787,7 @@ const styles = StyleSheet.create({
     width: isSmallScreen ? 64 : 72,
     height: isSmallScreen ? 64 : 72,
     borderRadius: isSmallScreen ? 32 : 36,
-    backgroundColor: '#e8f4f8',
+    backgroundColor: COLORS.SECONDARY,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: isSmallScreen ? 16 : 20,
@@ -794,7 +795,7 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: isSmallScreen ? 26 : 30,
     fontWeight: '900',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     marginBottom: 8,
     letterSpacing: 0.5,
     textAlign: 'center',
@@ -805,7 +806,7 @@ const styles = StyleSheet.create({
   },
   stepDescription: {
     fontSize: isSmallScreen ? 15 : 16,
-    color: '#4a5568',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
     lineHeight: isSmallScreen ? 20 : 22,
     textAlign: 'center',
@@ -828,7 +829,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: isSmallScreen ? 13 : 14,
     fontWeight: '700',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     marginBottom: isSmallScreen ? 8 : 10,
     letterSpacing: 0.3,
   },
@@ -840,17 +841,17 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
+    borderColor: COLORS.BORDER,
     marginBottom: 0,
     paddingLeft: isSmallScreen ? 16 : 18,
     paddingRight: isSmallScreen ? 16 : 18,
     height: isSmallScreen ? 54 : 58,
     minHeight: isSmallScreen ? 54 : 58,
     width: '100%',
-    shadowColor: '#041F2B',
+    shadowColor: COLORS.PRIMARY,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
@@ -869,7 +870,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: isSmallScreen ? 15 : 16,
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     fontWeight: '500',
     padding: 0,
     margin: 0,
@@ -884,10 +885,10 @@ const styles = StyleSheet.create({
   textAreaContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
+    borderColor: COLORS.BORDER,
     marginBottom: 0,
     paddingLeft: isSmallScreen ? 16 : 18,
     paddingRight: isSmallScreen ? 16 : 18,
@@ -895,7 +896,7 @@ const styles = StyleSheet.create({
     paddingBottom: isSmallScreen ? 16 : 18,
     minHeight: isSmallScreen ? 110 : 120,
     width: '100%',
-    shadowColor: '#041F2B',
+    shadowColor: COLORS.PRIMARY,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
@@ -911,7 +912,7 @@ const styles = StyleSheet.create({
   textArea: {
     flex: 1,
     fontSize: isSmallScreen ? 15 : 16,
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     fontWeight: '500',
     minHeight: isSmallScreen ? 80 : 90,
     padding: 0,
@@ -926,10 +927,10 @@ const styles = StyleSheet.create({
     minHeight: 70,
   },
   resumeUploadContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: COLORS.BORDER,
     borderStyle: 'dashed',
     padding: isSmallScreen ? 32 : 40,
     alignItems: 'center',
@@ -937,7 +938,7 @@ const styles = StyleSheet.create({
     marginTop: isSmallScreen ? 8 : 12,
     minHeight: isSmallScreen ? 240 : 280,
     width: '100%',
-    shadowColor: '#041F2B',
+    shadowColor: COLORS.PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -959,7 +960,7 @@ const styles = StyleSheet.create({
     width: isSmallScreen ? 88 : 100,
     height: isSmallScreen ? 88 : 100,
     borderRadius: isSmallScreen ? 44 : 50,
-    backgroundColor: '#e8f4f8',
+    backgroundColor: COLORS.SECONDARY,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: isSmallScreen ? 20 : 24,
@@ -967,7 +968,7 @@ const styles = StyleSheet.create({
   resumeText: {
     fontSize: isSmallScreen ? 18 : 20,
     fontWeight: '800',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     marginBottom: isSmallScreen ? 8 : 10,
     textAlign: 'center',
     letterSpacing: 0.5,
@@ -978,7 +979,7 @@ const styles = StyleSheet.create({
   },
   resumeSubtext: {
     fontSize: isSmallScreen ? 13 : 14,
-    color: '#4a5568',
+    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
     fontWeight: '500',
   },
@@ -991,13 +992,13 @@ const styles = StyleSheet.create({
     marginTop: isSmallScreen ? 16 : 20,
     paddingHorizontal: isSmallScreen ? 12 : 16,
     paddingVertical: isSmallScreen ? 10 : 12,
-    backgroundColor: '#f0f7fa',
+    backgroundColor: COLORS.SECONDARY,
     borderRadius: 10,
     maxWidth: '90%',
   },
   uploadHintText: {
     fontSize: isSmallScreen ? 11 : 12,
-    color: '#4a5568',
+    color: COLORS.TEXT_SECONDARY,
     marginLeft: 8,
     fontWeight: '500',
     lineHeight: isSmallScreen ? 16 : 18,
@@ -1012,18 +1013,18 @@ const styles = StyleSheet.create({
   },
   backButtonStyle: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND,
     paddingVertical: isSmallScreen ? 16 : 18,
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: '#041F2B',
+    borderColor: COLORS.PRIMARY,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: isSmallScreen ? 52 : 56,
     maxWidth: '100%',
     flexDirection: 'row',
     gap: 6,
-    shadowColor: '#041F2B',
+    shadowColor: COLORS.PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -1036,7 +1037,7 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: isSmallScreen ? 15 : 16,
     fontWeight: '800',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     letterSpacing: 0.8,
   },
   backButtonTextSmall: {
@@ -1045,7 +1046,7 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     flex: 2,
-    backgroundColor: '#041F2B',
+    backgroundColor: COLORS.PRIMARY,
     paddingVertical: isSmallScreen ? 16 : 18,
     borderRadius: 14,
     flexDirection: 'row',
@@ -1054,7 +1055,7 @@ const styles = StyleSheet.create({
     minHeight: isSmallScreen ? 52 : 56,
     maxWidth: '100%',
     gap: 8,
-    shadowColor: '#041F2B',
+    shadowColor: COLORS.PRIMARY,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -1069,7 +1070,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   nextButtonText: {
-    color: '#ffffff',
+    color: COLORS.TEXT_PRIMARY,
     fontSize: isSmallScreen ? 15 : 16,
     fontWeight: '800',
     letterSpacing: 0.8,

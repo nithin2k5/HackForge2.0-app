@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
+import { COLORS } from '@/constants/colors';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
@@ -78,7 +79,7 @@ export default function AuthScreen() {
           <View style={styles.content}>
         <View style={[styles.header, isSmallScreen && styles.headerSmall]}>
           <View style={[styles.logoContainer, isSmallScreen && styles.logoContainerSmall]}>
-            <Ionicons name="briefcase" size={isSmallScreen ? 24 : 28} color="#041F2B" />
+            <Ionicons name="briefcase" size={isSmallScreen ? 24 : 28} color={COLORS.PRIMARY} />
           </View>
           <Text style={[styles.logoText, isSmallScreen && styles.logoTextSmall]}>GROEI</Text>
         </View>
@@ -122,7 +123,7 @@ export default function AuthScreen() {
                   inputLayouts.current['name'] = e.nativeEvent.layout.y;
                 }}
               >
-                <Ionicons name="person-outline" size={isSmallScreen ? 18 : 20} color="#4a5568" style={styles.inputIcon} />
+                <Ionicons name="person-outline" size={isSmallScreen ? 18 : 20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                 <TextInput
                   ref={nameInputRef}
                   style={[styles.input, isSmallScreen && styles.inputSmall]}
@@ -150,7 +151,7 @@ export default function AuthScreen() {
                 inputLayouts.current['email'] = e.nativeEvent.layout.y;
               }}
             >
-              <Ionicons name="mail-outline" size={isSmallScreen ? 18 : 20} color="#4a5568" style={styles.inputIcon} />
+              <Ionicons name="mail-outline" size={isSmallScreen ? 18 : 20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
               <TextInput
                 ref={emailInputRef}
                 style={[styles.input, isSmallScreen && styles.inputSmall]}
@@ -179,7 +180,7 @@ export default function AuthScreen() {
                 inputLayouts.current['password'] = e.nativeEvent.layout.y;
               }}
             >
-              <Ionicons name="lock-closed-outline" size={isSmallScreen ? 18 : 20} color="#4a5568" style={styles.inputIcon} />
+              <Ionicons name="lock-closed-outline" size={isSmallScreen ? 18 : 20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
               <TextInput
                 ref={passwordInputRef}
                 style={[styles.input, isSmallScreen && styles.inputSmall]}
@@ -207,7 +208,7 @@ export default function AuthScreen() {
                 <Ionicons
                   name={showPassword ? 'eye-outline' : 'eye-off-outline'}
                   size={isSmallScreen ? 18 : 20}
-                  color="#4a5568"
+                  color={COLORS.TEXT_SECONDARY}
                 />
               </TouchableOpacity>
             </View>
@@ -224,13 +225,13 @@ export default function AuthScreen() {
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#ffffff" size="small" />
+                <ActivityIndicator color={COLORS.TEXT_PRIMARY} size="small" />
               ) : (
                 <>
                   <Text style={[styles.submitButtonText, isSmallScreen && styles.submitButtonTextSmall]}>
                     {isLogin ? 'LOGIN' : 'CREATE ACCOUNT'}
                   </Text>
-                  <Ionicons name="arrow-forward" size={isSmallScreen ? 18 : 20} color="#ffffff" />
+                  <Ionicons name="arrow-forward" size={isSmallScreen ? 18 : 20} color={COLORS.TEXT_PRIMARY} />
                 </>
               )}
             </Pressable>
@@ -243,7 +244,7 @@ export default function AuthScreen() {
 
             <View style={styles.socialContainer}>
               <Pressable style={[styles.socialButton, loading && styles.socialButtonDisabled, isSmallScreen && styles.socialButtonSmall]} disabled={loading}>
-                <Ionicons name="logo-google" size={isSmallScreen ? 20 : 24} color="#041F2B" />
+                <Ionicons name="logo-google" size={isSmallScreen ? 20 : 24} color={COLORS.PRIMARY} />
                 <Text style={[styles.socialButtonText, isSmallScreen && styles.socialButtonTextSmall]}>CONTINUE WITH GOOGLE</Text>
               </Pressable>
             </View>
@@ -270,11 +271,11 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND,
   },
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND,
   },
   scrollContent: {
     flexGrow: 1,
@@ -300,7 +301,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#e8f4f8',
+    backgroundColor: COLORS.SECONDARY,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -314,7 +315,7 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     letterSpacing: 2,
   },
   logoTextSmall: {
@@ -331,7 +332,7 @@ const styles = StyleSheet.create({
   },
   toggleContainer: {
     flexDirection: 'row',
-    backgroundColor: '#f0f7fa',
+    backgroundColor: COLORS.SECONDARY,
     borderRadius: 12,
     padding: 4,
     marginBottom: 24,
@@ -343,12 +344,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   toggleButtonActive: {
-    backgroundColor: '#041F2B',
+    backgroundColor: COLORS.PRIMARY,
   },
   toggleText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#4a5568',
+    color: COLORS.TEXT_SECONDARY,
     letterSpacing: 1,
   },
   toggleTextSmall: {
@@ -356,7 +357,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   toggleTextActive: {
-    color: '#ffffff',
+    color: COLORS.TEXT_PRIMARY,
   },
   formContainer: {
     width: '100%',
@@ -364,7 +365,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     marginBottom: 6,
     letterSpacing: 1,
     textAlign: 'center',
@@ -376,7 +377,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: '#4a5568',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 24,
     textAlign: 'center',
     fontWeight: '500',
@@ -392,10 +393,10 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafb',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: COLORS.BORDER,
     marginBottom: 12,
     paddingLeft: 16,
     paddingRight: 16,
@@ -417,7 +418,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     fontWeight: '500',
     padding: 0,
     margin: 0,
@@ -439,7 +440,7 @@ const styles = StyleSheet.create({
   forgotPasswordText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     letterSpacing: 0.5,
   },
   forgotPasswordTextSmall: {
@@ -447,14 +448,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   submitButton: {
-    backgroundColor: '#041F2B',
+    backgroundColor: COLORS.PRIMARY,
     paddingVertical: 16,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
-    shadowColor: '#041F2B',
+    shadowColor: COLORS.PRIMARY,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -470,7 +471,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: '#ffffff',
+    color: COLORS.TEXT_PRIMARY,
     fontSize: 17,
     fontWeight: '800',
     marginRight: 8,
@@ -489,7 +490,7 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#e2e8f0',
+    borderColor: COLORS.BORDER,
   },
   dividerText: {
     marginHorizontal: 16,
@@ -512,9 +513,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: COLORS.BORDER,
     borderRadius: 12,
     paddingVertical: 12,
     gap: 8,
@@ -531,7 +532,7 @@ const styles = StyleSheet.create({
   socialButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     letterSpacing: 0.5,
   },
   socialButtonTextSmall: {
@@ -547,7 +548,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 13,
-    color: '#4a5568',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   footerTextSmall: {
@@ -556,7 +557,7 @@ const styles = StyleSheet.create({
   footerLink: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     letterSpacing: 0.5,
   },
   footerLinkSmall: {

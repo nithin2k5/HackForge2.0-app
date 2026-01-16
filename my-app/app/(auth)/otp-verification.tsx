@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { COLORS } from '@/constants/colors';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
@@ -143,10 +144,10 @@ export default function OTPVerificationScreen() {
             }}
             disabled={loading}
           >
-            <Ionicons name="arrow-back" size={24} color={loading ? '#cbd5e0' : '#041F2B'} />
+            <Ionicons name="arrow-back" size={24} color={loading ? COLORS.TEXT_SECONDARY : COLORS.PRIMARY} />
           </TouchableOpacity>
           <View style={[styles.logoContainer, isSmallScreen && styles.logoContainerSmall]}>
-            <Ionicons name="mail" size={isSmallScreen ? 24 : 28} color="#041F2B" />
+            <Ionicons name="mail" size={isSmallScreen ? 24 : 28} color={COLORS.PRIMARY} />
           </View>
           <Text style={[styles.logoText, isSmallScreen && styles.logoTextSmall]}>GROEI</Text>
         </View>
@@ -195,13 +196,13 @@ export default function OTPVerificationScreen() {
               disabled={loading || otp.join('').length !== 6}
             >
               {loading ? (
-                <ActivityIndicator color="#ffffff" size="small" />
+                <ActivityIndicator color={COLORS.TEXT_PRIMARY} size="small" />
               ) : (
                 <>
                   <Text style={[styles.submitButtonText, isSmallScreen && styles.submitButtonTextSmall]}>
                     VERIFY OTP
                   </Text>
-                  <Ionicons name="checkmark-circle" size={isSmallScreen ? 18 : 20} color="#ffffff" />
+                  <Ionicons name="checkmark-circle" size={isSmallScreen ? 18 : 20} color={COLORS.TEXT_PRIMARY} />
                 </>
               )}
             </Pressable>
@@ -234,11 +235,11 @@ export default function OTPVerificationScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND,
   },
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND,
   },
   scrollContent: {
     flexGrow: 1,
@@ -270,7 +271,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#e8f4f8',
+    backgroundColor: COLORS.SECONDARY,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -284,7 +285,7 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     letterSpacing: 2,
   },
   logoTextSmall: {
@@ -305,7 +306,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     marginBottom: 8,
     letterSpacing: 1,
     textAlign: 'center',
@@ -317,7 +318,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: '#4a5568',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 32,
     textAlign: 'center',
     fontWeight: '500',
@@ -330,7 +331,7 @@ const styles = StyleSheet.create({
   },
   emailText: {
     fontWeight: '700',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
   },
   otpContainer: {
     flexDirection: 'row',
@@ -342,13 +343,13 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 56,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: COLORS.BORDER,
     borderRadius: 12,
-    backgroundColor: '#f8fafb',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
     textAlign: 'center',
     fontSize: 24,
     fontWeight: '700',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     padding: 0,
     margin: 0,
   },
@@ -357,18 +358,18 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   otpInputFilled: {
-    borderColor: '#041F2B',
-    backgroundColor: '#ffffff',
+    borderColor: COLORS.PRIMARY,
+    backgroundColor: COLORS.BACKGROUND,
   },
   submitButton: {
-    backgroundColor: '#041F2B',
+    backgroundColor: COLORS.PRIMARY,
     paddingVertical: 16,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
-    shadowColor: '#041F2B',
+    shadowColor: COLORS.PRIMARY,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -384,7 +385,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: '#ffffff',
+    color: COLORS.TEXT_PRIMARY,
     fontSize: 17,
     fontWeight: '800',
     marginRight: 8,
@@ -401,7 +402,7 @@ const styles = StyleSheet.create({
   },
   resendText: {
     fontSize: 14,
-    color: '#4a5568',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   resendTextSmall: {
@@ -410,7 +411,7 @@ const styles = StyleSheet.create({
   resendLink: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     letterSpacing: 0.5,
   },
   resendLinkSmall: {

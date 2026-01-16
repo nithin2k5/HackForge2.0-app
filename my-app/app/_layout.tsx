@@ -6,7 +6,7 @@ import 'react-native-reanimated';
 import '../global.css';
 import { TamaguiProvider } from '@tamagui/core';
 import config from '../tamagui.config';
-import FullScreenLoader from '@/components/FullScreenLoader';
+import FullScreenLoader from '@/components/common/FullScreenLoader';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -42,10 +42,13 @@ export default function RootLayout() {
             initialRouteName="(tabs)"
           >
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="auth" options={{ headerShown: false }} />
-            <Stack.Screen name="otp-verification" options={{ headerShown: false }} />
-            <Stack.Screen name="profile-setup" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(jobs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(companies)" options={{ headerShown: false }} />
+            <Stack.Screen name="(projects)" options={{ headerShown: false }} />
+            <Stack.Screen name="settings" options={{ headerShown: false }} />
             <Stack.Screen name="dashboard" options={{ headerShown: false }} />
+            <Stack.Screen name="notifications" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
           <StatusBar style="auto" />

@@ -3,7 +3,11 @@ import { useRef, useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
-import Loader from '@/components/Loader';
+import Loader from '@/components/common/Loader';
+import { COLORS } from '@/constants/colors';
+
+const { width: screenWidth } = Dimensions.get('window');
+const isSmallScreen = screenWidth < 375;
 
 export default function HomeScreen() {
   const { signIn } = useAuth();
@@ -78,7 +82,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.logoContainer}>
-            <Ionicons name="briefcase" size={22} color="#041F2B" />
+            <Ionicons name="briefcase" size={22} color={COLORS.PRIMARY} />
           </View>
           <Text style={styles.logoText}>GROEI</Text>
         </View>
@@ -100,7 +104,7 @@ export default function HomeScreen() {
             <Ionicons name="arrow-forward" size={20} color="#ffffff" style={styles.buttonIcon} />
           </Pressable>
           <TouchableOpacity style={styles.secondaryButton} onPress={handleGetStarted}>
-            <Ionicons name="cloud-upload-outline" size={20} color="#041F2B" style={styles.buttonIcon} />
+            <Ionicons name="cloud-upload-outline" size={20} color={COLORS.PRIMARY} style={styles.buttonIcon} />
             <Text style={styles.secondaryButtonText}>Upload Resume</Text>
           </TouchableOpacity>
         </View>
@@ -108,18 +112,21 @@ export default function HomeScreen() {
 
       <View style={styles.statsSection}>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>50K+</Text>
-          <Text style={styles.statLabel}>Professionals</Text>
+          <Text style={[styles.statNumber, isSmallScreen && styles.statNumberSmall]}>50K+</Text>
+          <Text style={[styles.statLabel, isSmallScreen && styles.statLabelSmall]}>Professionals</Text>
         </View>
-        <View style={styles.statDivider} />
+        <View style={[styles.statDivider, isSmallScreen && styles.statDividerSmall]} />
+        <TouchableOpacity 
+          style={styles.statItem}
+          onPress={() => router.push('/companies' as any)}
+        >
+          <Text style={[styles.statNumber, isSmallScreen && styles.statNumberSmall]}>5K+</Text>
+          <Text style={[styles.statLabel, isSmallScreen && styles.statLabelSmall]}>Companies</Text>
+        </TouchableOpacity>
+        <View style={[styles.statDivider, isSmallScreen && styles.statDividerSmall]} />
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>5K+</Text>
-          <Text style={styles.statLabel}>Companies</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>95%</Text>
-          <Text style={styles.statLabel}>Match Rate</Text>
+          <Text style={[styles.statNumber, isSmallScreen && styles.statNumberSmall]}>95%</Text>
+          <Text style={[styles.statLabel, isSmallScreen && styles.statLabelSmall]}>Match Rate</Text>
         </View>
       </View>
 
@@ -134,7 +141,7 @@ export default function HomeScreen() {
                 <Text style={styles.stepNumberText}>1</Text>
               </View>
               <View style={styles.stepIconContainer}>
-                <Ionicons name="document-text" size={32} color="#041F2B" />
+                <Ionicons name="document-text" size={32} color={COLORS.PRIMARY} />
               </View>
               <Text style={styles.stepTitle}>Upload Resume</Text>
               <Text style={styles.stepDescription}>
@@ -147,7 +154,7 @@ export default function HomeScreen() {
                 <Text style={styles.stepNumberText}>2</Text>
               </View>
               <View style={styles.stepIconContainer}>
-                <Ionicons name="sparkles" size={32} color="#041F2B" />
+                <Ionicons name="sparkles" size={32} color={COLORS.PRIMARY} />
               </View>
               <Text style={styles.stepTitle}>AI Analysis</Text>
               <Text style={styles.stepDescription}>
@@ -160,7 +167,7 @@ export default function HomeScreen() {
                 <Text style={styles.stepNumberText}>3</Text>
               </View>
               <View style={styles.stepIconContainer}>
-                <Ionicons name="checkmark-circle" size={32} color="#041F2B" />
+                <Ionicons name="checkmark-circle" size={32} color={COLORS.PRIMARY} />
               </View>
               <Text style={styles.stepTitle}>Get Matched</Text>
               <Text style={styles.stepDescription}>
@@ -192,7 +199,7 @@ export default function HomeScreen() {
             {[...benefitCards, ...benefitCards, ...benefitCards].map((card, index) => (
               <View key={index} style={[styles.benefitCard, { width: cardWidth }]}>
                 <View style={styles.benefitIconContainer}>
-                  <Ionicons name={card.icon as any} size={28} color="#041F2B" />
+                  <Ionicons name={card.icon as any} size={28} color={COLORS.PRIMARY} />
                 </View>
                 <Text style={styles.benefitTitle}>{card.title}</Text>
                 <Text style={styles.benefitDescription}>
@@ -210,7 +217,7 @@ export default function HomeScreen() {
           <View style={styles.featuresList}>
             <View style={styles.featureRow}>
               <View style={styles.featureIconBox}>
-                <Ionicons name="flash" size={24} color="#041F2B" />
+                <Ionicons name="flash" size={24} color={COLORS.PRIMARY} />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>Instant Matching</Text>
@@ -222,7 +229,7 @@ export default function HomeScreen() {
 
             <View style={styles.featureRow}>
               <View style={styles.featureIconBox}>
-                <Ionicons name="shield-checkmark" size={24} color="#041F2B" />
+                <Ionicons name="shield-checkmark" size={24} color={COLORS.PRIMARY} />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>Secure & Private</Text>
@@ -234,7 +241,7 @@ export default function HomeScreen() {
 
             <View style={styles.featureRow}>
               <View style={styles.featureIconBox}>
-                <Ionicons name="stats-chart" size={24} color="#041F2B" />
+                <Ionicons name="stats-chart" size={24} color={COLORS.PRIMARY} />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>Smart Analytics</Text>
@@ -246,7 +253,7 @@ export default function HomeScreen() {
 
             <View style={styles.featureRow}>
               <View style={styles.featureIconBox}>
-                <Ionicons name="notifications" size={24} color="#041F2B" />
+                <Ionicons name="notifications" size={24} color={COLORS.PRIMARY} />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>Real-time Updates</Text>
@@ -261,7 +268,7 @@ export default function HomeScreen() {
         <View style={styles.ctaSection}>
           <View style={styles.ctaCard}>
             <View style={styles.ctaIconContainer}>
-              <Ionicons name="rocket" size={40} color="#041F2B" />
+              <Ionicons name="rocket" size={40} color={COLORS.PRIMARY} />
             </View>
             <Text style={styles.ctaTitle}>Ready to Get Started?</Text>
             <Text style={styles.ctaDescription}>
@@ -279,10 +286,13 @@ export default function HomeScreen() {
   );
 }
 
+const { width: screenWidthForStyles } = Dimensions.get('window');
+const isSmallScreenForStyles = screenWidthForStyles < 375;
+
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND,
   },
   scrollContent: {
     paddingBottom: 50,
@@ -291,7 +301,7 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingBottom: 20,
     paddingHorizontal: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND,
   },
   headerContent: {
     flexDirection: 'row',
@@ -302,7 +312,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: COLORS.SECONDARY,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -311,7 +321,7 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 26,
     fontWeight: '900',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     letterSpacing: 2,
   },
   heroSection: {
@@ -322,7 +332,7 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 38,
     fontWeight: '900',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     marginBottom: 12,
     letterSpacing: -0.5,
     lineHeight: 46,
@@ -337,7 +347,7 @@ const styles = StyleSheet.create({
   },
   heroDescription: {
     fontSize: 16,
-    color: '#4a5568',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 32,
     lineHeight: 24,
     fontWeight: '500',
@@ -346,14 +356,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   primaryButton: {
-    backgroundColor: '#041F2B',
+    backgroundColor: COLORS.PRIMARY,
     paddingVertical: 18,
     paddingHorizontal: 24,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#041F2B',
+    shadowColor: COLORS.PRIMARY,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -370,18 +380,18 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   secondaryButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#041F2B',
+    borderColor: COLORS.PRIMARY,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryButtonText: {
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     fontSize: 16,
     fontWeight: '700',
     marginLeft: 8,
@@ -389,36 +399,57 @@ const styles = StyleSheet.create({
   },
   statsSection: {
     flexDirection: 'row',
-    paddingHorizontal: 24,
-    paddingVertical: 32,
-    backgroundColor: '#f0f7fa',
-    marginHorizontal: 24,
+    paddingHorizontal: isSmallScreenForStyles ? 16 : 24,
+    paddingVertical: isSmallScreenForStyles ? 24 : 32,
+    backgroundColor: COLORS.SECONDARY,
+    marginHorizontal: isSmallScreenForStyles ? 16 : 24,
     borderRadius: 16,
-    marginBottom: 40,
+    marginBottom: isSmallScreenForStyles ? 32 : 40,
     alignItems: 'center',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    width: screenWidthForStyles - (isSmallScreenForStyles ? 32 : 48),
+    alignSelf: 'center',
   },
   statItem: {
     alignItems: 'center',
     flex: 1,
+    minWidth: 0,
+    paddingHorizontal: isSmallScreenForStyles ? 4 : 8,
   },
   statNumber: {
-    fontSize: 34,
+    fontSize: isSmallScreenForStyles ? 28 : 34,
     fontWeight: '900',
-    color: '#041F2B',
-    marginBottom: 4,
+    color: COLORS.PRIMARY,
+    marginBottom: isSmallScreenForStyles ? 3 : 4,
     letterSpacing: -0.5,
+    textAlign: 'center',
+  },
+  statNumberSmall: {
+    fontSize: 26,
+    marginBottom: 2,
   },
   statLabel: {
-    fontSize: 14,
-    color: '#4a5568',
+    fontSize: isSmallScreenForStyles ? 12 : 14,
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '700',
     letterSpacing: 0.5,
+    textAlign: 'center',
+    lineHeight: isSmallScreenForStyles ? 16 : 18,
+  },
+  statLabelSmall: {
+    fontSize: 11,
+    letterSpacing: 0.3,
   },
   statDivider: {
     width: 1,
-    height: 40,
-    backgroundColor: '#cbd5e0',
+    height: isSmallScreenForStyles ? 36 : 40,
+    backgroundColor: COLORS.SECONDARY,
+    marginHorizontal: isSmallScreenForStyles ? 4 : 8,
+    flexShrink: 0,
+  },
+  statDividerSmall: {
+    height: 32,
+    marginHorizontal: 2,
   },
   contentSection: {
     paddingHorizontal: 24,
@@ -429,13 +460,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 34,
     fontWeight: '900',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     marginBottom: 8,
     letterSpacing: -0.3,
   },
   sectionSubtitle: {
     fontSize: 16,
-    color: '#4a5568',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 32,
     fontWeight: '700',
     letterSpacing: 0.2,
@@ -444,11 +475,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   stepCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
     borderRadius: 16,
     padding: 24,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: COLORS.BORDER,
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -463,20 +494,20 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#e8f4f8',
+    backgroundColor: COLORS.SECONDARY,
     justifyContent: 'center',
     alignItems: 'center',
   },
   stepNumberText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
   },
   stepIconContainer: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#e8f4f8',
+    backgroundColor: COLORS.SECONDARY,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -484,13 +515,13 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     marginBottom: 8,
     letterSpacing: 0.2,
   },
   stepDescription: {
     fontSize: 15,
-    color: '#4a5568',
+    color: COLORS.TEXT_SECONDARY,
     lineHeight: 22,
     fontWeight: '500',
   },
@@ -502,11 +533,11 @@ const styles = StyleSheet.create({
     paddingRight: 24,
   },
   benefitCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
     borderRadius: 16,
     padding: 24,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: COLORS.BORDER,
     marginRight: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -518,7 +549,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#e8f4f8',
+    backgroundColor: COLORS.SECONDARY,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -526,13 +557,13 @@ const styles = StyleSheet.create({
   benefitTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     marginBottom: 8,
     letterSpacing: 0.2,
   },
   benefitDescription: {
     fontSize: 15,
-    color: '#4a5568',
+    color: COLORS.TEXT_SECONDARY,
     lineHeight: 22,
     fontWeight: '500',
   },
@@ -541,11 +572,11 @@ const styles = StyleSheet.create({
   },
   featureRow: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: COLORS.BORDER,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -557,7 +588,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#e8f4f8',
+    backgroundColor: COLORS.SECONDARY,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -568,13 +599,13 @@ const styles = StyleSheet.create({
   featureTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     marginBottom: 4,
     letterSpacing: 0.2,
   },
   featureDescription: {
     fontSize: 15,
-    color: '#4a5568',
+    color: COLORS.TEXT_SECONDARY,
     lineHeight: 22,
     fontWeight: '500',
   },
@@ -583,11 +614,11 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   ctaCard: {
-    backgroundColor: '#f0f7fa',
+    backgroundColor: COLORS.SECONDARY,
     borderRadius: 20,
     padding: 32,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: COLORS.BORDER,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -599,11 +630,11 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
-    shadowColor: '#041F2B',
+    shadowColor: COLORS.PRIMARY,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -612,21 +643,21 @@ const styles = StyleSheet.create({
   ctaTitle: {
     fontSize: 30,
     fontWeight: '900',
-    color: '#041F2B',
+    color: COLORS.PRIMARY,
     marginBottom: 12,
     textAlign: 'center',
     letterSpacing: 0.5,
   },
   ctaDescription: {
     fontSize: 16,
-    color: '#4a5568',
+    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
     marginBottom: 28,
     lineHeight: 24,
     fontWeight: '500',
   },
   ctaButton: {
-    backgroundColor: '#041F2B',
+    backgroundColor: COLORS.PRIMARY,
     paddingVertical: 18,
     paddingHorizontal: 32,
     borderRadius: 12,
@@ -634,7 +665,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    shadowColor: '#041F2B',
+    shadowColor: COLORS.PRIMARY,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
