@@ -35,14 +35,21 @@ CREATE TABLE IF NOT EXISTS users (
   location VARCHAR(255),
   title VARCHAR(255),
   company_id INT,
-  status ENUM('active', 'inactive') DEFAULT 'active',
+  status ENUM('active', 'inactive') DEFAULT 'inactive',
+  email_verified BOOLEAN DEFAULT FALSE,
+  verification_token VARCHAR(255),
+  verification_token_expires DATETIME,
+  reset_token VARCHAR(255),
+  reset_token_expires DATETIME,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL,
   INDEX idx_email (email),
   INDEX idx_role (role),
   INDEX idx_company (company_id),
-  INDEX idx_status (status)
+  INDEX idx_status (status),
+  INDEX idx_verification_token (verification_token),
+  INDEX idx_reset_token (reset_token)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS jobs (

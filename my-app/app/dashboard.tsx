@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions, TextInput, Pressable, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions, TextInput, Pressable, Switch, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { COLORS } from '@/constants/colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jobsApi, savedJobsApi, applicationsApi, interviewsApi } from '@/services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 const DRAWER_WIDTH = screenWidth * 0.75;
@@ -17,39 +17,76 @@ export default function DashboardScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [savedJobs, setSavedJobs] = useState<number[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [stats, setStats] = useState({ applications: 0, interviews: 0, saved: 0 });
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { signOut } = useAuth();
 
   useEffect(() => {
-    const loadSavedJobs = async () => {
-      try {
-        const saved = await AsyncStorage.getItem('savedJobs');
-        if (saved) {
-          setSavedJobs(JSON.parse(saved));
-        }
-      } catch (error) {
-        console.error('Error loading saved jobs:', error);
-      }
-    };
-    loadSavedJobs();
+    loadDashboardData();
   }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [jobsRes, savedRes, appsRes, interviewsRes] = await Promise.all([
+        jobsApi.getAll({}),
+        savedJobsApi.getAll(),
+        applicationsApi.getAll(),
+        interviewsApi.getAll(),
+      ]);
+
+      const allJobs = Array.isArray(jobsRes) ? jobsRes : (jobsRes.data || jobsRes.jobs || []);
+      setJobs(allJobs.slice(0, 4));
+      setProjects([]);
+      
+      const savedJobIds = Array.isArray(savedRes) 
+        ? savedRes.map((item: any) => item.job_id || item.id)
+        : (savedRes.data || []).map((item: any) => item.job_id || item.id);
+      setSavedJobs(savedJobIds);
+
+      const applications = Array.isArray(appsRes) ? appsRes : (appsRes.data || []);
+      const interviews = Array.isArray(interviewsRes) ? interviewsRes : (interviewsRes.data || []);
+      
+      setStats({
+        applications: applications.length,
+        interviews: interviews.filter((i: any) => i.status === 'scheduled').length,
+        saved: savedJobIds.length,
+      });
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSaveJob = async (jobId: number) => {
     try {
       const isSaved = savedJobs.includes(jobId);
-      let updatedSavedJobs;
       
       if (isSaved) {
-        updatedSavedJobs = savedJobs.filter(id => id !== jobId);
+        await savedJobsApi.delete(jobId);
+        setSavedJobs(savedJobs.filter(id => id !== jobId));
+        setStats({ ...stats, saved: stats.saved - 1 });
       } else {
-        updatedSavedJobs = [...savedJobs, jobId];
+        await savedJobsApi.save(jobId);
+        setSavedJobs([...savedJobs, jobId]);
+        setStats({ ...stats, saved: stats.saved + 1 });
       }
-      
-      await AsyncStorage.setItem('savedJobs', JSON.stringify(updatedSavedJobs));
-      setSavedJobs(updatedSavedJobs);
     } catch (error) {
       console.error('Error saving job:', error);
     }
+  };
+
+  const getJobIcon = (title: string) => {
+    const lowerTitle = title.toLowerCase();
+    if (lowerTitle.includes('react') || lowerTitle.includes('frontend')) return 'code';
+    if (lowerTitle.includes('backend') || lowerTitle.includes('server')) return 'server';
+    if (lowerTitle.includes('design') || lowerTitle.includes('ui/ux')) return 'color-palette';
+    if (lowerTitle.includes('full stack') || lowerTitle.includes('fullstack')) return 'layers';
+    return 'briefcase';
   };
 
   const menuItems = [
@@ -65,88 +102,14 @@ export default function DashboardScreen() {
     { id: 'settings', icon: 'settings-outline', label: 'Settings', activeIcon: 'settings', route: null },
   ];
 
-  const jobs = [
-    {
-      id: 1,
-      title: 'Senior React Developer',
-      company: 'Tech Corp Inc.',
-      location: 'Remote',
-      salary: '₹6L - ₹9L',
-      match: 95,
-      type: 'Full-time',
-      posted: '2 days ago',
-      icon: 'code',
-    },
-    {
-      id: 2,
-      title: 'Backend Engineer',
-      company: 'StartupXYZ',
-      location: 'Hybrid',
-      salary: '₹5L - ₹7L',
-      match: 92,
-      type: 'Full-time',
-      posted: '5 days ago',
-      icon: 'server',
-    },
-    {
-      id: 3,
-      title: 'Full Stack Developer',
-      company: 'Digital Solutions',
-      location: 'On-site',
-      salary: '₹6.5L - ₹10L',
-      match: 88,
-      type: 'Full-time',
-      posted: '1 week ago',
-      icon: 'layers',
-    },
-    {
-      id: 4,
-      title: 'UI/UX Designer',
-      company: 'Creative Agency',
-      location: 'Remote',
-      salary: '₹4.5L - ₹7L',
-      match: 85,
-      type: 'Contract',
-      posted: '3 days ago',
-      icon: 'color-palette',
-    },
-  ];
-
-  const projects = [
-    {
-      id: 1,
-      title: 'E-commerce Platform',
-      client: 'Retail Corp',
-      status: 'Active',
-      budget: '₹1.2L',
-      deadline: '2 weeks',
-      icon: 'cart',
-    },
-    {
-      id: 2,
-      title: 'Mobile App Development',
-      client: 'Tech Startup',
-      status: 'In Progress',
-      budget: '₹2L',
-      deadline: '1 month',
-      icon: 'phone-portrait',
-    },
-    {
-      id: 3,
-      title: 'Website Redesign',
-      client: 'Design Studio',
-      status: 'Completed',
-      budget: '₹65k',
-      deadline: 'Completed',
-      icon: 'globe',
-    },
-  ];
 
   const handleMenuPress = (itemId: string) => {
     const item = menuItems.find(m => m.id === itemId);
     if (item?.route) {
-      router.push(item.route as any);
       setDrawerOpen(false);
+      setTimeout(() => {
+        router.push(item.route as any);
+      }, 100);
     } else {
       setActiveTab(itemId);
       setDrawerOpen(false);
@@ -173,21 +136,21 @@ export default function DashboardScreen() {
           <View style={styles.statIconContainer}>
             <Ionicons name="briefcase" size={isSmallScreen ? 22 : 24} color={COLORS.PRIMARY} />
           </View>
-          <Text style={styles.statNumber}>12</Text>
+          <Text style={styles.statNumber}>{stats.applications}</Text>
           <Text style={styles.statLabel}>Active Applications</Text>
         </Pressable>
         <View style={styles.statCard}>
           <View style={styles.statIconContainer}>
             <Ionicons name="checkmark-circle" size={isSmallScreen ? 22 : 24} color={COLORS.PRIMARY} />
           </View>
-          <Text style={styles.statNumber}>5</Text>
+          <Text style={styles.statNumber}>{stats.interviews}</Text>
           <Text style={styles.statLabel}>Interviews</Text>
         </View>
         <View style={styles.statCard}>
           <View style={styles.statIconContainer}>
             <Ionicons name="star" size={isSmallScreen ? 22 : 24} color={COLORS.PRIMARY} />
           </View>
-          <Text style={styles.statNumber}>8</Text>
+          <Text style={styles.statNumber}>{stats.saved}</Text>
           <Text style={styles.statLabel}>Saved Jobs</Text>
         </View>
       </View>
@@ -199,59 +162,77 @@ export default function DashboardScreen() {
             <Text style={styles.seeAllText}>See All</Text>
           </TouchableOpacity>
         </View>
-        {jobs.slice(0, 2).map((job) => (
-          <Pressable
-            key={job.id}
-            style={styles.jobCard}
-            onPress={() => {
-              router.push({
-                pathname: '/job-detail',
-                params: {
-                  id: job.id.toString(),
-                  title: job.title,
-                  company: job.company,
-                  location: job.location,
-                  salary: job.salary,
-                  match: job.match.toString(),
-                  type: job.type,
-                  posted: job.posted,
-                  icon: job.icon,
-                },
-              });
-            }}
-          >
-            <View style={styles.jobHeader}>
-              <View style={styles.jobIconContainer}>
-                <Ionicons name={job.icon as any} size={24} color={COLORS.PRIMARY} />
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={COLORS.PRIMARY} />
+            <Text style={styles.loadingText}>Loading jobs...</Text>
+          </View>
+        ) : jobs.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="briefcase-outline" size={48} color={COLORS.TEXT_SECONDARY} />
+            <Text style={styles.emptyText}>No jobs available</Text>
+          </View>
+        ) : (
+          jobs.slice(0, 2).map((job) => (
+            <Pressable
+              key={job.id}
+              style={styles.jobCard}
+              onPress={() => {
+                router.push({
+                  pathname: '/job-detail',
+                  params: {
+                    id: job.id.toString(),
+                    title: job.title || '',
+                    company: job.company || '',
+                    location: job.location || '',
+                    salary: job.salary || '',
+                    match: job.match?.toString() || '0',
+                    type: job.type || '',
+                    posted: job.posted || '',
+                    icon: job.icon || getJobIcon(job.title || ''),
+                  },
+                });
+              }}
+            >
+              <View style={styles.jobHeader}>
+                <View style={styles.jobIconContainer}>
+                  <Ionicons name={getJobIcon(job.title || '') as any} size={24} color={COLORS.PRIMARY} />
+                </View>
+                <View style={styles.jobInfo}>
+                  <Text style={styles.jobTitle}>{job.title || 'Job Title'}</Text>
+                  <Text style={styles.jobCompany}>{job.company || 'Company'}</Text>
+                </View>
+                <TouchableOpacity onPress={() => handleSaveJob(job.id)}>
+                  <Ionicons 
+                    name={savedJobs.includes(job.id) ? 'bookmark' : 'bookmark-outline'} 
+                    size={24} 
+                    color={savedJobs.includes(job.id) ? COLORS.PRIMARY : COLORS.TEXT_SECONDARY} 
+                  />
+                </TouchableOpacity>
               </View>
-              <View style={styles.jobInfo}>
-                <Text style={styles.jobTitle}>{job.title}</Text>
-                <Text style={styles.jobCompany}>{job.company}</Text>
+              <Text style={styles.jobDescription}>
+                {job.type || ''} • {job.location || ''} • {job.posted || ''}
+              </Text>
+              <View style={styles.jobFooter}>
+                {job.location && (
+                  <View style={styles.jobTag}>
+                    <Text style={styles.jobTagText}>{job.location}</Text>
+                  </View>
+                )}
+                {job.salary && (
+                  <View style={styles.jobTag}>
+                    <Text style={styles.jobTagText}>{job.salary}</Text>
+                  </View>
+                )}
+                {job.match && (
+                  <View style={styles.matchBadge}>
+                    <Text style={styles.matchText}>{job.match}% Match</Text>
+                  </View>
+                )}
               </View>
-              <TouchableOpacity onPress={() => handleSaveJob(job.id)}>
-                <Ionicons 
-                  name={savedJobs.includes(job.id) ? 'bookmark' : 'bookmark-outline'} 
-                  size={24} 
-                  color={savedJobs.includes(job.id) ? COLORS.PRIMARY : COLORS.TEXT_SECONDARY} 
-                />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.jobDescription}>
-              {job.type} • {job.location} • {job.posted}
-            </Text>
-            <View style={styles.jobFooter}>
-              <View style={styles.jobTag}>
-                <Text style={styles.jobTagText}>{job.location}</Text>
-              </View>
-              <View style={styles.jobTag}>
-                <Text style={styles.jobTagText}>{job.salary}</Text>
-              </View>
-              <View style={styles.matchBadge}>
-                <Text style={styles.matchText}>{job.match}% Match</Text>
-              </View>
-            </View>
-          </Pressable>
-        ))}
+            </Pressable>
+          ))
+        )}
       </View>
     </View>
   );
@@ -414,31 +395,31 @@ export default function DashboardScreen() {
               </View>
             </View>
             <View style={styles.projectActions}>
-              <Pressable 
-                style={styles.projectActionButton}
-                onPress={() => router.push({
-                  pathname: '/(projects)/project-detail' as any,
-                  params: {
-                    id: project.id.toString(),
-                    title: project.title,
-                    client: project.client,
-                    budget: project.budget,
-                    duration: project.deadline,
-                    skills: 'React,Node.js',
-                    match: '90',
-                    status: project.status.toLowerCase(),
-                  },
-                })}
-              >
-                <Ionicons name="eye-outline" size={18} color={COLORS.PRIMARY} />
-                <Text style={styles.projectActionText}>View Details</Text>
-              </Pressable>
-              <Pressable style={styles.projectActionButton}>
-                <Ionicons name="chatbubble-outline" size={18} color={COLORS.PRIMARY} />
-                <Text style={styles.projectActionText}>Messages</Text>
-              </Pressable>
-            </View>
+            <Pressable 
+              style={styles.projectActionButton}
+              onPress={() => router.push({
+                pathname: '/(projects)/project-detail' as any,
+                params: {
+                  id: project.id.toString(),
+                  title: project.title || '',
+                  client: project.client || '',
+                  budget: project.budget || '',
+                  duration: project.deadline || '',
+                  skills: 'React,Node.js',
+                  match: '90',
+                  status: project.status?.toLowerCase() || 'active',
+                },
+              })}
+            >
+              <Ionicons name="eye-outline" size={18} color={COLORS.PRIMARY} />
+              <Text style={styles.projectActionText}>View Details</Text>
+            </Pressable>
+            <Pressable style={styles.projectActionButton}>
+              <Ionicons name="chatbubble-outline" size={18} color={COLORS.PRIMARY} />
+              <Text style={styles.projectActionText}>Messages</Text>
+            </Pressable>
           </View>
+        </View>
         ))}
       </View>
     </View>
@@ -689,22 +670,26 @@ export default function DashboardScreen() {
     </View>
   );
 
+  useEffect(() => {
+    if (activeTab === 'jobs') {
+      router.push('/jobs');
+      setActiveTab('home');
+    } else if (activeTab === 'projects') {
+      router.push('/projects');
+      setActiveTab('home');
+    }
+  }, [activeTab]);
+
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
         return renderHomeContent();
-      case 'jobs':
-        router.push('/jobs');
-        return null;
-      case 'projects':
-        router.push('/projects');
-        return null;
       case 'profile':
         return renderProfileContent();
       case 'settings':
         return renderSettingsContent();
       default:
-        return null;
+        return renderHomeContent();
     }
   };
 
@@ -1597,5 +1582,25 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
     zIndex: 1000,
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: COLORS.TEXT_SECONDARY,
+  },
+  emptyContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: COLORS.TEXT_SECONDARY,
   },
 });

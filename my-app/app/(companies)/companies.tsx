@@ -1,109 +1,79 @@
-import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, TextInput, SafeAreaView } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, TextInput, SafeAreaView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/colors';
+import { companiesApi } from '@/services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
 
-const companies = [
-  {
-    id: 1,
-    name: 'TechCorp',
-    initials: 'TC',
-    location: 'San Francisco, CA',
-    employees: '500-1000',
-    website: 'techcorp.com',
-    description: 'Leading technology company specializing in AI and cloud solutions.',
-    founded: '2015',
-    openPositions: 12,
-    rating: 4.8,
-    featured: true,
-  },
-  {
-    id: 2,
-    name: 'Design Studio',
-    initials: 'DS',
-    location: 'New York, NY',
-    employees: '50-200',
-    website: 'designstudio.com',
-    description: 'Creative agency focused on digital design and branding.',
-    founded: '2012',
-    openPositions: 8,
-    rating: 4.6,
-    featured: true,
-  },
-  {
-    id: 3,
-    name: 'CloudTech',
-    initials: 'CT',
-    location: 'Seattle, WA',
-    employees: '200-500',
-    website: 'cloudtech.io',
-    description: 'Cloud infrastructure and DevOps solutions provider.',
-    founded: '2018',
-    openPositions: 15,
-    rating: 4.7,
-    featured: false,
-  },
-  {
-    id: 4,
-    name: 'DataLabs',
-    initials: 'DL',
-    location: 'Austin, TX',
-    employees: '100-200',
-    website: 'datalabs.ai',
-    description: 'Data science and machine learning consulting firm.',
-    founded: '2016',
-    openPositions: 6,
-    rating: 4.9,
-    featured: true,
-  },
-  {
-    id: 5,
-    name: 'BuildCo',
-    initials: 'BC',
-    location: 'Chicago, IL',
-    employees: '500-1000',
-    website: 'buildco.com',
-    description: 'Software development and engineering services.',
-    founded: '2010',
-    openPositions: 20,
-    rating: 4.5,
-    featured: false,
-  },
-  {
-    id: 6,
-    name: 'InnovateHub',
-    initials: 'IH',
-    location: 'Boston, MA',
-    employees: '50-200',
-    website: 'innovatehub.com',
-    description: 'Innovation lab working on cutting-edge technologies.',
-    founded: '2019',
-    openPositions: 10,
-    rating: 4.8,
-    featured: true,
-  },
-];
+interface Company {
+  id: number;
+  name: string;
+  location?: string;
+  employees?: string;
+  website?: string;
+  description?: string;
+  founded?: string;
+  openPositions?: number;
+  rating?: number;
+  featured?: boolean;
+  verified?: boolean;
+}
 
 export default function CompaniesScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('highest-rated');
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredCompanies = companies.filter(company =>
-    company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    company.location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    loadCompanies();
+  }, []);
 
-  const sortedCompanies = [...filteredCompanies].sort((a, b) => {
-    if (sortBy === 'highest-rated') return b.rating - a.rating;
-    if (sortBy === 'most-positions') return b.openPositions - a.openPositions;
-    if (sortBy === 'name') return a.name.localeCompare(b.name);
-    return b.rating - a.rating;
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadCompanies();
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  const loadCompanies = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const filters: any = {};
+      if (searchQuery) filters.search = searchQuery;
+      
+      const response = await companiesApi.getAll(filters);
+      setCompanies(Array.isArray(response) ? response : (response.data || response.companies || []));
+    } catch (err: any) {
+      console.error('Error loading companies:', err);
+      setError(err.message || 'Failed to load companies');
+      setCompanies([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const sortedCompanies = [...companies].sort((a, b) => {
+    if (sortBy === 'highest-rated') return (b.rating || 0) - (a.rating || 0);
+    if (sortBy === 'most-positions') return (b.openPositions || 0) - (a.openPositions || 0);
+    if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
+    return (b.rating || 0) - (a.rating || 0);
   });
 
   const sortOptions = [
@@ -166,11 +136,33 @@ export default function CompaniesScreen() {
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>{sortedCompanies.length} Top Companies</Text>
-        <Text style={styles.sectionSubtitle}>Leading companies actively hiring on GROEI</Text>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+            <Text style={styles.loadingText}>Loading companies...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={48} color={COLORS.ERROR} />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={loadCompanies}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <Text style={styles.sectionTitle}>{sortedCompanies.length} Top Companies</Text>
+            <Text style={styles.sectionSubtitle}>Leading companies actively hiring on GROEI</Text>
 
-        <View style={styles.companiesGrid}>
-          {sortedCompanies.map((company) => (
+            {sortedCompanies.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="business-outline" size={64} color={COLORS.TEXT_SECONDARY} />
+                <Text style={styles.emptyText}>No companies found</Text>
+                <Text style={styles.emptySubtext}>Try adjusting your search</Text>
+              </View>
+            ) : (
+              <View style={styles.companiesGrid}>
+                {sortedCompanies.map((company) => (
             <TouchableOpacity
               key={company.id}
               style={styles.companyCard}
@@ -185,8 +177,8 @@ export default function CompaniesScreen() {
                     website: company.website,
                     description: company.description,
                     founded: company.founded,
-                    openPositions: company.openPositions.toString(),
-                    rating: company.rating.toString(),
+                    openPositions: ((company.openPositions || 0)).toString(),
+                    rating: ((company.rating || 0)).toString(),
                   },
                 });
               }}
@@ -199,34 +191,46 @@ export default function CompaniesScreen() {
               )}
               <View style={styles.companyHeader}>
                 <View style={styles.companyInitials}>
-                  <Text style={styles.initialsText}>{company.initials}</Text>
+                  <Text style={styles.initialsText}>{getInitials(company.name)}</Text>
                 </View>
                 <View style={styles.companyInfo}>
                   <Text style={styles.companyName}>{company.name}</Text>
-                  <View style={styles.ratingContainer}>
-                    <Ionicons name="star" size={14} color={COLORS.PRIMARY} />
-                    <Text style={styles.ratingText}>{company.rating}</Text>
-                  </View>
+                  {company.rating && (
+                    <View style={styles.ratingContainer}>
+                      <Ionicons name="star" size={14} color={COLORS.PRIMARY} />
+                      <Text style={styles.ratingText}>{company.rating}</Text>
+                    </View>
+                  )}
                 </View>
               </View>
-              <Text style={styles.companyDescription} numberOfLines={2}>{company.description}</Text>
+              {company.description && (
+                <Text style={styles.companyDescription} numberOfLines={2}>{company.description}</Text>
+              )}
               <View style={styles.companyDetails}>
-                <View style={styles.detailRow}>
-                  <Ionicons name="location-outline" size={14} color={COLORS.TEXT_SECONDARY} />
-                  <Text style={styles.detailText}>{company.location}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Ionicons name="people-outline" size={14} color={COLORS.TEXT_SECONDARY} />
-                  <Text style={styles.detailText}>{company.employees} employees</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Ionicons name="calendar-outline" size={14} color={COLORS.TEXT_SECONDARY} />
-                  <Text style={styles.detailText}>Founded {company.founded}</Text>
-                </View>
+                {company.location && (
+                  <View style={styles.detailRow}>
+                    <Ionicons name="location-outline" size={14} color={COLORS.TEXT_SECONDARY} />
+                    <Text style={styles.detailText}>{company.location}</Text>
+                  </View>
+                )}
+                {company.employees && (
+                  <View style={styles.detailRow}>
+                    <Ionicons name="people-outline" size={14} color={COLORS.TEXT_SECONDARY} />
+                    <Text style={styles.detailText}>{company.employees} employees</Text>
+                  </View>
+                )}
+                {company.founded && (
+                  <View style={styles.detailRow}>
+                    <Ionicons name="calendar-outline" size={14} color={COLORS.TEXT_SECONDARY} />
+                    <Text style={styles.detailText}>Founded {company.founded}</Text>
+                  </View>
+                )}
               </View>
-              <View style={styles.openPositions}>
-                <Text style={styles.openPositionsText}>{company.openPositions} open positions</Text>
-              </View>
+              {company.openPositions !== undefined && (
+                <View style={styles.openPositions}>
+                  <Text style={styles.openPositionsText}>{company.openPositions} open positions</Text>
+                </View>
+              )}
               <View style={styles.buttonRow}>
                 <TouchableOpacity
                   style={styles.viewJobsButton}
@@ -252,8 +256,8 @@ export default function CompaniesScreen() {
                         website: company.website,
                         description: company.description,
                         founded: company.founded,
-                        openPositions: company.openPositions.toString(),
-                        rating: company.rating.toString(),
+                        openPositions: (company.openPositions || 0).toString(),
+                        rating: (company.rating || 0).toString(),
                       },
                     });
                   }}
@@ -262,8 +266,11 @@ export default function CompaniesScreen() {
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
-          ))}
-        </View>
+                ))}
+              </View>
+            )}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -512,5 +519,57 @@ const styles = StyleSheet.create({
   sortMenuItemTextActive: {
     color: COLORS.PRIMARY,
     fontWeight: '700',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.TEXT_SECONDARY,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.ERROR,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    color: COLORS.TEXT_PRIMARY,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.TEXT_PRIMARY,
+  },
+  emptySubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: COLORS.TEXT_SECONDARY,
   },
 });

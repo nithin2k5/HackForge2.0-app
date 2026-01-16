@@ -35,15 +35,68 @@ class User {
     return rows[0];
   }
 
+  static async findByVerificationToken(token) {
+    const [rows] = await pool.execute(
+      'SELECT * FROM users WHERE verification_token = ? AND verification_token_expires > NOW()',
+      [token]
+    );
+    return rows[0];
+  }
+
+  static async findByResetToken(token) {
+    const [rows] = await pool.execute(
+      'SELECT * FROM users WHERE reset_token = ? AND reset_token_expires > NOW()',
+      [token]
+    );
+    return rows[0];
+  }
+
+  static async updateVerificationToken(userId, token, expiresAt) {
+    await pool.execute(
+      'UPDATE users SET verification_token = ?, verification_token_expires = ? WHERE id = ?',
+      [token || null, expiresAt || null, userId]
+    );
+  }
+
+  static async updateResetToken(userId, token, expiresAt) {
+    await pool.execute(
+      'UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
+      [token || null, expiresAt || null, userId]
+    );
+  }
+
+  static async verifyEmail(userId) {
+    await pool.execute(
+      'UPDATE users SET email_verified = TRUE, status = "active", verification_token = NULL, verification_token_expires = NULL WHERE id = ?',
+      [userId]
+    );
+  }
+
+  static async clearResetToken(userId) {
+    await pool.execute(
+      'UPDATE users SET reset_token = NULL, reset_token_expires = NULL WHERE id = ?',
+      [userId]
+    );
+  }
+
   static async create(data) {
     const { name, email, password, role, phone, location, title, company_id } = data;
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const [result] = await pool.execute(
-      `INSERT INTO users (name, email, password, role, phone, location, title, company_id) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, email, hashedPassword, role || 'user', phone, location, title, company_id]
+      `INSERT INTO users (name, email, password, role, phone, location, title, company_id, status, email_verified) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'inactive', 0)`,
+      [
+        name, 
+        email, 
+        hashedPassword, 
+        role || 'user', 
+        phone || null, 
+        location || null, 
+        title || null, 
+        company_id || null
+      ]
     );
 
     return this.findById(result.insertId);
@@ -60,7 +113,7 @@ class User {
     Object.keys(data).forEach(key => {
       if (data[key] !== undefined && key !== 'id') {
         fields.push(`${key} = ?`);
-        values.push(data[key]);
+        values.push(data[key] === undefined ? null : data[key]);
       }
     });
 

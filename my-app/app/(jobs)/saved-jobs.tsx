@@ -1,91 +1,77 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { savedJobsApi, jobsApi } from '@/services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
 
-const allJobs = [
-  {
-    id: 1,
-    title: 'Senior React Developer',
-    company: 'Tech Corp Inc.',
-    location: 'Remote',
-    salary: '₹6L - ₹9L',
-    match: 95,
-    type: 'Full-time',
-    posted: '2 days ago',
-    icon: 'code',
-  },
-  {
-    id: 2,
-    title: 'Backend Engineer',
-    company: 'StartupXYZ',
-    location: 'Hybrid',
-    salary: '₹5L - ₹7L',
-    match: 92,
-    type: 'Full-time',
-    posted: '5 days ago',
-    icon: 'server',
-  },
-  {
-    id: 3,
-    title: 'Full Stack Developer',
-    company: 'Digital Solutions',
-    location: 'On-site',
-    salary: '₹6.5L - ₹10L',
-    match: 88,
-    type: 'Full-time',
-    posted: '1 week ago',
-    icon: 'layers',
-  },
-  {
-    id: 4,
-    title: 'UI/UX Designer',
-    company: 'Creative Agency',
-    location: 'Remote',
-    salary: '₹4.5L - ₹7L',
-    match: 85,
-    type: 'Contract',
-    posted: '3 days ago',
-    icon: 'color-palette',
-  },
-];
+interface SavedJob {
+  id: number;
+  job_id: number;
+  job?: {
+    id: number;
+    title: string;
+    company: string;
+    location: string;
+    salary?: string;
+    match?: number;
+    type?: string;
+    posted?: string;
+  };
+  saved_at?: string;
+}
 
 export default function SavedJobsScreen() {
   const router = useRouter();
-  const [savedJobIds, setSavedJobIds] = useState<number[]>([]);
+  const [savedJobs, setSavedJobs] = useState<SavedJob[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useFocusEffect(
     React.useCallback(() => {
-      const loadSavedJobs = async () => {
-        try {
-          const saved = await AsyncStorage.getItem('savedJobs');
-          if (saved) {
-            setSavedJobIds(JSON.parse(saved));
-          }
-        } catch (error) {
-          console.error('Error loading saved jobs:', error);
-        }
-      };
       loadSavedJobs();
     }, [])
   );
 
+  const loadSavedJobs = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await savedJobsApi.getAll();
+      const jobs = Array.isArray(response) ? response : (response.data || []);
+      setSavedJobs(jobs);
+    } catch (err: any) {
+      console.error('Error loading saved jobs:', err);
+      setError(err.message || 'Failed to load saved jobs');
+      setSavedJobs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleUnsave = async (jobId: number) => {
     try {
-      const updated = savedJobIds.filter(id => id !== jobId);
-      await AsyncStorage.setItem('savedJobs', JSON.stringify(updated));
-      setSavedJobIds(updated);
+      await savedJobsApi.delete(jobId);
+      setSavedJobs(savedJobs.filter(item => (item.job_id || item.id) !== jobId));
     } catch (error) {
       console.error('Error unsaving job:', error);
     }
   };
 
-  const savedJobs = allJobs.filter(job => savedJobIds.includes(job.id));
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Recently';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -98,7 +84,20 @@ export default function SavedJobsScreen() {
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {savedJobs.length === 0 ? (
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+            <Text style={styles.loadingText}>Loading saved jobs...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={48} color={COLORS.ERROR} />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={loadSavedJobs}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : savedJobs.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="bookmark-outline" size={64} color={COLORS.TEXT_SECONDARY} />
             <Text style={styles.emptyTitle}>No Saved Jobs</Text>
@@ -113,45 +112,51 @@ export default function SavedJobsScreen() {
         ) : (
           <>
             <Text style={styles.resultsText}>{savedJobs.length} saved jobs</Text>
-            {savedJobs.map((job) => (
-              <TouchableOpacity
-                key={job.id}
-                style={styles.jobCard}
-                onPress={() => {
-                  router.push({
-                    pathname: '/(jobs)/job-detail' as any,
-                    params: {
-                      id: job.id.toString(),
-                      title: job.title,
-                      company: job.company,
-                      location: job.location,
-                      salary: job.salary,
-                      match: job.match.toString(),
-                    },
-                  });
-                }}
-              >
-                <View style={styles.jobHeader}>
-                  <View style={styles.jobInfo}>
-                    <Text style={styles.jobTitle}>{job.title}</Text>
-                    <Text style={styles.jobCompany}>{job.company} • {job.location}</Text>
+            {savedJobs.map((item) => {
+              const job = item.job || item as any;
+              const jobId = job.id || item.job_id || item.id;
+              return (
+                <TouchableOpacity
+                  key={jobId}
+                  style={styles.jobCard}
+                  onPress={() => {
+                    router.push({
+                      pathname: '/(jobs)/job-detail' as any,
+                      params: {
+                        id: jobId.toString(),
+                        title: job.title || '',
+                        company: job.company || '',
+                        location: job.location || '',
+                        salary: job.salary || '',
+                        match: job.match?.toString() || '0',
+                      },
+                    });
+                  }}
+                >
+                  <View style={styles.jobHeader}>
+                    <View style={styles.jobInfo}>
+                      <Text style={styles.jobTitle}>{job.title || 'Job Title'}</Text>
+                      <Text style={styles.jobCompany}>{job.company || ''} • {job.location || ''}</Text>
+                    </View>
+                    <TouchableOpacity 
+                      style={styles.unsaveButton}
+                      onPress={() => handleUnsave(jobId)}
+                    >
+                      <Ionicons name="bookmark" size={24} color={COLORS.PRIMARY} />
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity 
-                    style={styles.unsaveButton}
-                    onPress={() => handleUnsave(job.id)}
-                  >
-                    <Ionicons name="bookmark" size={24} color={COLORS.PRIMARY} />
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.jobDetails}>
-                  <Text style={styles.jobSalary}>{job.salary}</Text>
-                  <View style={styles.matchBadge}>
-                    <Text style={styles.matchText}>{job.match}% Match</Text>
+                  <View style={styles.jobDetails}>
+                    <Text style={styles.jobSalary}>{job.salary || 'Salary not specified'}</Text>
+                    {job.match && (
+                      <View style={styles.matchBadge}>
+                        <Text style={styles.matchText}>{job.match}% Match</Text>
+                      </View>
+                    )}
                   </View>
-                </View>
-                <Text style={styles.savedDate}>Saved {job.posted}</Text>
-              </TouchableOpacity>
-            ))}
+                  <Text style={styles.savedDate}>Saved {formatDate(item.saved_at || job.posted)}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </>
         )}
       </ScrollView>
@@ -284,5 +289,40 @@ const styles = StyleSheet.create({
   savedDate: {
     fontSize: 12,
     color: COLORS.TEXT_SECONDARY,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.TEXT_SECONDARY,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.ERROR,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    color: COLORS.TEXT_PRIMARY,
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

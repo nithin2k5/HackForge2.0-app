@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions, ScrollView, BackHandler } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions, ScrollView, BackHandler, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { COLORS } from '@/constants/colors';
+import { authApi } from '@/services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
@@ -65,11 +67,12 @@ export default function OTPVerificationScreen() {
     };
   }, []);
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (loading) return;
     
     const otpCode = otp.join('');
     if (otpCode.length !== 6) {
+      Alert.alert('Error', 'Please enter the complete 6-digit code');
       return;
     }
 
@@ -78,15 +81,27 @@ export default function OTPVerificationScreen() {
     }
 
     setLoading(true);
-    timeoutRef.current = setTimeout(() => {
+    try {
+      const response = await authApi.verifyOTP(email, otpCode);
+      if (response.verified) {
+        if (response.token) {
+          await AsyncStorage.setItem('authToken', response.token);
+        }
+        signIn();
+        router.replace({
+          pathname: '/profile-setup',
+          params: { email },
+        });
+      }
+    } catch (err: any) {
+      Alert.alert('Verification Failed', err.message || 'Invalid verification code. Please try again.');
+    } finally {
       setLoading(false);
-      signIn();
-      router.replace({
-        pathname: '/profile-setup',
-        params: { email },
-      });
-      timeoutRef.current = null;
-    }, 1500);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    }
   };
 
   const handleResend = () => {
@@ -349,7 +364,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 24,
     fontWeight: '700',
-    color: COLORS.PRIMARY,
+    color: COLORS.TEXT_PRIMARY,
     padding: 0,
     margin: 0,
   },

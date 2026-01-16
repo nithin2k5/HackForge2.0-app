@@ -1,116 +1,103 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView, TextInput, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jobsApi, savedJobsApi } from '@/services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
 
-const suggestedJobs = [
-  {
-    id: 1,
-    title: 'Senior React Developer',
-    company: 'TechCorp',
-    location: 'Remote',
-    salary: '₹6L - ₹9L',
-    match: 98,
-    type: 'Full-time',
-    posted: '2 days ago',
-    icon: 'code',
-    reason: 'Strong match with your React and TypeScript skills',
-    skills: ['React', 'TypeScript', 'Node.js'],
-  },
-  {
-    id: 2,
-    title: 'Full Stack Engineer',
-    company: 'Digital Solutions',
-    location: 'Hybrid',
-    salary: '₹7L - ₹10L',
-    match: 95,
-    type: 'Full-time',
-    posted: '1 day ago',
-    icon: 'layers',
-    reason: 'Matches your full-stack experience and MongoDB expertise',
-    skills: ['React', 'Node.js', 'MongoDB'],
-  },
-  {
-    id: 3,
-    title: 'Frontend Developer',
-    company: 'Creative Agency',
-    location: 'Remote',
-    salary: '₹5.5L - ₹8L',
-    match: 92,
-    type: 'Full-time',
-    posted: '3 days ago',
-    icon: 'color-palette',
-    reason: 'Perfect fit for your UI/UX and React skills',
-    skills: ['React', 'CSS', 'UI/UX'],
-  },
-  {
-    id: 4,
-    title: 'React Native Developer',
-    company: 'MobileFirst',
-    location: 'Remote',
-    salary: '₹6.5L - ₹9.5L',
-    match: 90,
-    type: 'Full-time',
-    posted: '5 days ago',
-    icon: 'phone-portrait',
-    reason: 'Your React experience translates well to mobile development',
-    skills: ['React Native', 'JavaScript', 'Mobile'],
-  },
-  {
-    id: 5,
-    title: 'JavaScript Developer',
-    company: 'StartupXYZ',
-    location: 'Hybrid',
-    salary: '₹5L - ₹7.5L',
-    match: 88,
-    type: 'Full-time',
-    posted: '1 week ago',
-    icon: 'logo-javascript',
-    reason: 'Strong alignment with your JavaScript and ES6+ skills',
-    skills: ['JavaScript', 'ES6+', 'Web Development'],
-  },
-];
+interface SuggestedJob {
+  id: number;
+  title: string;
+  company: string;
+  location: string;
+  salary?: string;
+  match?: number;
+  type?: string;
+  posted?: string;
+  icon?: string;
+  reason?: string;
+  skills?: string[];
+}
 
 export default function SuggestionsScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const [suggestedJobs, setSuggestedJobs] = useState<SuggestedJob[]>([]);
   const [savedJobs, setSavedJobs] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadSavedJobs = async () => {
-      try {
-        const saved = await AsyncStorage.getItem('savedJobs');
-        if (saved) {
-          setSavedJobs(JSON.parse(saved));
-        }
-      } catch (error) {
-        console.error('Error loading saved jobs:', error);
-      }
-    };
+    loadSuggestions();
     loadSavedJobs();
   }, []);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadSuggestions();
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  const loadSuggestions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const filters: any = { suggested: true };
+      if (searchQuery) filters.search = searchQuery;
+      
+      const response = await jobsApi.getAll(filters);
+      const jobs = Array.isArray(response) ? response : (response.data || response.suggestions || []);
+      setSuggestedJobs(jobs);
+    } catch (err: any) {
+      console.error('Error loading suggestions:', err);
+      setError(err.message || 'Failed to load suggestions');
+      setSuggestedJobs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSavedJobs = async () => {
+    try {
+      const response = await savedJobsApi.getAll();
+      const savedJobIds = Array.isArray(response) 
+        ? response.map((item: any) => item.job_id || item.id)
+        : (response.data || []).map((item: any) => item.job_id || item.id);
+      setSavedJobs(savedJobIds);
+    } catch (error) {
+      console.error('Error loading saved jobs:', error);
+    }
+  };
 
   const handleSaveJob = async (jobId: number) => {
     try {
       const isSaved = savedJobs.includes(jobId);
-      let updatedSavedJobs;
       
       if (isSaved) {
-        updatedSavedJobs = savedJobs.filter(id => id !== jobId);
+        await savedJobsApi.delete(jobId);
+        setSavedJobs(savedJobs.filter(id => id !== jobId));
       } else {
-        updatedSavedJobs = [...savedJobs, jobId];
+        await savedJobsApi.save(jobId);
+        setSavedJobs([...savedJobs, jobId]);
       }
-      
-      await AsyncStorage.setItem('savedJobs', JSON.stringify(updatedSavedJobs));
-      setSavedJobs(updatedSavedJobs);
     } catch (error) {
       console.error('Error saving job:', error);
     }
+  };
+
+  const getJobIcon = (title: string) => {
+    const lowerTitle = title.toLowerCase();
+    if (lowerTitle.includes('react') || lowerTitle.includes('frontend')) return 'code';
+    if (lowerTitle.includes('backend') || lowerTitle.includes('server')) return 'server';
+    if (lowerTitle.includes('design') || lowerTitle.includes('ui/ux')) return 'color-palette';
+    if (lowerTitle.includes('full stack') || lowerTitle.includes('fullstack')) return 'layers';
+    if (lowerTitle.includes('mobile') || lowerTitle.includes('native')) return 'phone-portrait';
+    if (lowerTitle.includes('javascript')) return 'logo-javascript';
+    return 'briefcase';
   };
 
   const filteredJobs = suggestedJobs.filter(job =>
@@ -163,16 +150,31 @@ export default function SuggestionsScreen() {
           </View>
         </View>
 
-        <Text style={styles.resultsText}>{filteredJobs.length} job suggestions</Text>
-
-        {filteredJobs.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="search-outline" size={64} color={COLORS.TEXT_SECONDARY} />
-            <Text style={styles.emptyTitle}>No Suggestions Found</Text>
-            <Text style={styles.emptyText}>Try adjusting your search</Text>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+            <Text style={styles.loadingText}>Loading suggestions...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={48} color={COLORS.ERROR} />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={loadSuggestions}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
           </View>
         ) : (
-          filteredJobs.map((job) => (
+          <>
+            <Text style={styles.resultsText}>{filteredJobs.length} job suggestions</Text>
+
+            {filteredJobs.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="search-outline" size={64} color={COLORS.TEXT_SECONDARY} />
+                <Text style={styles.emptyTitle}>No Suggestions Found</Text>
+                <Text style={styles.emptyText}>Try adjusting your search</Text>
+              </View>
+            ) : (
+              filteredJobs.map((job) => (
             <TouchableOpacity
               key={job.id}
               style={styles.jobCard}
@@ -184,11 +186,11 @@ export default function SuggestionsScreen() {
                     title: job.title,
                     company: job.company,
                     location: job.location,
-                    salary: job.salary,
-                    match: job.match.toString(),
-                    type: job.type,
-                    posted: job.posted,
-                    icon: job.icon,
+                    salary: job.salary || '',
+                    match: job.match?.toString() || '0',
+                    type: job.type || '',
+                    posted: job.posted || '',
+                    icon: job.icon || getJobIcon(job.title),
                   },
                 });
               }}
@@ -196,7 +198,7 @@ export default function SuggestionsScreen() {
               <View style={styles.cardTop}>
                 <View style={styles.jobHeader}>
                   <View style={styles.jobIconContainer}>
-                    <Ionicons name={job.icon as any} size={24} color={COLORS.PRIMARY} />
+                    <Ionicons name={getJobIcon(job.title) as any} size={24} color={COLORS.PRIMARY} />
                   </View>
                   <View style={styles.jobInfo}>
                     <Text style={styles.jobTitle}>{job.title}</Text>
@@ -225,19 +227,23 @@ export default function SuggestionsScreen() {
                 </View>
               </View>
 
-              <View style={styles.reasonBox}>
-                <View style={styles.reasonHeader}>
-                  <Ionicons name="checkmark-circle" size={16} color={COLORS.SUCCESS} />
-                  <Text style={styles.reasonText}>{job.reason}</Text>
-                </View>
-                <View style={styles.skillsContainer}>
-                  {job.skills.map((skill, index) => (
-                    <View key={index} style={styles.skillTag}>
-                      <Text style={styles.skillText}>{skill}</Text>
+              {job.reason && (
+                <View style={styles.reasonBox}>
+                  <View style={styles.reasonHeader}>
+                    <Ionicons name="checkmark-circle" size={16} color={COLORS.SUCCESS} />
+                    <Text style={styles.reasonText}>{job.reason}</Text>
+                  </View>
+                  {job.skills && job.skills.length > 0 && (
+                    <View style={styles.skillsContainer}>
+                      {job.skills.map((skill, index) => (
+                        <View key={index} style={styles.skillTag}>
+                          <Text style={styles.skillText}>{skill}</Text>
+                        </View>
+                      ))}
                     </View>
-                  ))}
+                  )}
                 </View>
-              </View>
+              )}
 
               <View style={styles.jobDetails}>
                 <View style={styles.detailItem}>
@@ -254,7 +260,9 @@ export default function SuggestionsScreen() {
                 </View>
               </View>
             </TouchableOpacity>
-          ))
+              ))
+            )}
+          </>
         )}
       </ScrollView>
 
@@ -534,5 +542,40 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
     zIndex: 1000,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.TEXT_SECONDARY,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.ERROR,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    color: COLORS.TEXT_PRIMARY,
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

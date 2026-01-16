@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
+import { authApi } from '@/services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
@@ -38,28 +40,53 @@ export default function AuthScreen() {
     if (loading) return;
     
     if (!email || !password || (!isLogin && !name)) {
+      Alert.alert('Error', 'Please fill in all fields');
       return;
-    }
-
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
     }
 
     setLoading(true);
     
-    timeoutRef.current = setTimeout(() => {
-      setLoading(false);
+    try {
       if (isLogin) {
-        signIn();
-        router.replace('/dashboard');
+        const response = await authApi.login(email, password);
+        
+        if (response.token) {
+          await AsyncStorage.setItem('authToken', response.token);
+          signIn();
+          router.replace('/dashboard');
+        }
       } else {
-        router.push({
-          pathname: '/otp-verification',
-          params: { email },
+        const response = await authApi.register({
+          name,
+          email,
+          password,
         });
+        
+        const alertMessage = response.warning 
+          ? `${response.message}\n\n${response.warning}`
+          : response.message || 'Please check your email for the 6-digit verification code.';
+        
+        Alert.alert(
+          'Verification Required',
+          alertMessage,
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                router.push({
+                  pathname: '/(auth)/otp-verification',
+                  params: { email },
+                });
+              },
+            },
+          ]
+        );
       }
-      timeoutRef.current = null;
-    }, 1500);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -214,7 +241,11 @@ export default function AuthScreen() {
             </View>
 
             {isLogin && (
-              <TouchableOpacity style={styles.forgotPassword} disabled={loading}>
+              <TouchableOpacity 
+                style={styles.forgotPassword} 
+                disabled={loading}
+                onPress={() => router.push('/(auth)/forgot-password')}
+              >
                 <Text style={[styles.forgotPasswordText, isSmallScreen && styles.forgotPasswordTextSmall]}>FORGOT PASSWORD?</Text>
               </TouchableOpacity>
             )}
@@ -418,7 +449,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
-    color: COLORS.PRIMARY,
+    color: COLORS.TEXT_PRIMARY,
     fontWeight: '500',
     padding: 0,
     margin: 0,

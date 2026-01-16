@@ -1,63 +1,70 @@
-import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, TextInput, SafeAreaView } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, TextInput, SafeAreaView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/colors';
+import { jobsApi } from '@/services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
 
-const projects = [
-  {
-    id: 1,
-    title: 'E-commerce Platform Development',
-    client: 'Retail Corp',
-    budget: '₹1.2L - ₹2L',
-    duration: '3-6 months',
-    skills: ['React', 'Node.js', 'MongoDB'],
-    match: 95,
-    status: 'active',
-    posted: '2 days ago',
-  },
-  {
-    id: 2,
-    title: 'Mobile App UI/UX Design',
-    client: 'StartupXYZ',
-    budget: '₹65k - ₹95k',
-    duration: '1-2 months',
-    skills: ['Figma', 'UI/UX', 'Prototyping'],
-    match: 92,
-    status: 'active',
-    posted: '5 days ago',
-  },
-  {
-    id: 3,
-    title: 'Cloud Migration Project',
-    client: 'Tech Solutions',
-    budget: '₹1.6L - ₹2.7L',
-    duration: '4-8 months',
-    skills: ['AWS', 'Docker', 'Kubernetes'],
-    match: 88,
-    status: 'active',
-    posted: '1 week ago',
-  },
-];
+interface Project {
+  id: number;
+  title: string;
+  client?: string;
+  budget?: string;
+  duration?: string;
+  skills?: string[];
+  match?: number;
+  status?: string;
+  posted?: string;
+}
 
 export default function ProjectsScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('all');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.client.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    if (filter === 'all') return matchesSearch;
-    if (filter === 'active') return matchesSearch && project.status === 'active';
-    if (filter === 'completed') return matchesSearch && project.status === 'completed';
-    
-    return matchesSearch;
-  });
+  useEffect(() => {
+    loadProjects();
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadProjects();
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, filter]);
+
+  const loadProjects = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const filters: any = { type: 'project' };
+      if (searchQuery) filters.search = searchQuery;
+      if (filter === 'active') filters.status = 'active';
+      if (filter === 'completed') filters.status = 'completed';
+      
+      const response = await jobsApi.getAll(filters);
+      const allProjects = Array.isArray(response) ? response : (response.data || response.projects || []);
+      setProjects(allProjects);
+    } catch (err: any) {
+      console.error('Error loading projects:', err);
+      setError(err.message || 'Failed to load projects');
+      setProjects([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatSkills = (skills?: string[] | string) => {
+    if (!skills) return [];
+    if (typeof skills === 'string') return skills.split(',').map(s => s.trim());
+    return skills;
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -96,23 +103,43 @@ export default function ProjectsScreen() {
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {filteredProjects.map((project) => (
-          <TouchableOpacity
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+            <Text style={styles.loadingText}>Loading projects...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={48} color={COLORS.ERROR} />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={loadProjects}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : projects.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="folder-outline" size={64} color={COLORS.TEXT_SECONDARY} />
+            <Text style={styles.emptyText}>No projects found</Text>
+            <Text style={styles.emptySubtext}>Try adjusting your search or filters</Text>
+          </View>
+        ) : (
+          projects.map((project) => (
+            <TouchableOpacity
             key={project.id}
             style={styles.projectCard}
             onPress={() => {
               router.push({
                 pathname: '/(projects)/project-detail' as any,
-                params: {
-                  id: project.id.toString(),
-                  title: project.title,
-                  client: project.client,
-                  budget: project.budget,
-                  duration: project.duration,
-                  skills: project.skills.join(','),
-                  match: project.match.toString(),
-                  status: project.status,
-                },
+                  params: {
+                    id: project.id.toString(),
+                    title: project.title,
+                    client: project.client || '',
+                    budget: project.budget || '',
+                    duration: project.duration || '',
+                    skills: formatSkills(project.skills).join(','),
+                    match: project.match?.toString() || '0',
+                    status: project.status || 'active',
+                  },
               });
             }}
           >
@@ -126,28 +153,37 @@ export default function ProjectsScreen() {
               </View>
             </View>
             <View style={styles.projectDetails}>
-              <View style={styles.detailItem}>
-                <Ionicons name="cash-outline" size={16} color={COLORS.TEXT_SECONDARY} />
-                <Text style={styles.detailText}>{project.budget}</Text>
-              </View>
-              <View style={styles.detailItem}>
-                <Ionicons name="time-outline" size={16} color={COLORS.TEXT_SECONDARY} />
-                <Text style={styles.detailText}>{project.duration}</Text>
-              </View>
-            </View>
-            <View style={styles.skillsContainer}>
-              {project.skills.map((skill, index) => (
-                <View key={index} style={styles.skillTag}>
-                  <Text style={styles.skillText}>{skill}</Text>
+              {project.budget && (
+                <View style={styles.detailItem}>
+                  <Ionicons name="cash-outline" size={16} color={COLORS.TEXT_SECONDARY} />
+                  <Text style={styles.detailText}>{project.budget}</Text>
                 </View>
-              ))}
+              )}
+              {project.duration && (
+                <View style={styles.detailItem}>
+                  <Ionicons name="time-outline" size={16} color={COLORS.TEXT_SECONDARY} />
+                  <Text style={styles.detailText}>{project.duration}</Text>
+                </View>
+              )}
             </View>
-            <View style={styles.statusBadge}>
-              <View style={[styles.statusDot, project.status === 'active' && styles.statusDotActive]} />
-              <Text style={styles.statusText}>{project.status.charAt(0).toUpperCase() + project.status.slice(1)}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+            {formatSkills(project.skills).length > 0 && (
+              <View style={styles.skillsContainer}>
+                {formatSkills(project.skills).map((skill, index) => (
+                  <View key={index} style={styles.skillTag}>
+                    <Text style={styles.skillText}>{skill}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+            {project.status && (
+              <View style={styles.statusBadge}>
+                <View style={[styles.statusDot, project.status === 'active' && styles.statusDotActive]} />
+                <Text style={styles.statusText}>{project.status.charAt(0).toUpperCase() + project.status.slice(1)}</Text>
+              </View>
+            )}
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -322,6 +358,58 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: '600',
+    color: COLORS.TEXT_SECONDARY,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.TEXT_SECONDARY,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.ERROR,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    color: COLORS.TEXT_PRIMARY,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.TEXT_PRIMARY,
+  },
+  emptySubtext: {
+    marginTop: 8,
+    fontSize: 14,
     color: COLORS.TEXT_SECONDARY,
   },
 });

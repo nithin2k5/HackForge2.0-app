@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as Linking from 'expo-linking';
 import 'react-native-reanimated';
 import '../global.css';
 import { TamaguiProvider } from '@tamagui/core';
@@ -18,6 +19,7 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -25,6 +27,46 @@ export default function RootLayout() {
     }, 2000);
 
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const subscription = Linking.addEventListener('url', (event) => {
+      const { url } = event;
+      const parsed = Linking.parse(url);
+      
+      if (parsed.path === 'verify-email' && parsed.queryParams?.token) {
+        router.replace({
+          pathname: '/(auth)/verify-email',
+          params: { token: parsed.queryParams.token as string }
+        });
+      } else if (parsed.path === 'reset-password' && parsed.queryParams?.token) {
+        router.replace({
+          pathname: '/(auth)/reset-password',
+          params: { token: parsed.queryParams.token as string }
+        });
+      }
+    });
+
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        const parsed = Linking.parse(url);
+        if (parsed.path === 'verify-email' && parsed.queryParams?.token) {
+          router.replace({
+            pathname: '/(auth)/verify-email',
+            params: { token: parsed.queryParams.token as string }
+          });
+        } else if (parsed.path === 'reset-password' && parsed.queryParams?.token) {
+          router.replace({
+            pathname: '/(auth)/reset-password',
+            params: { token: parsed.queryParams.token as string }
+          });
+        }
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   if (isLoading) {

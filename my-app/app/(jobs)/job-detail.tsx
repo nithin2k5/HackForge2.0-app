@@ -1,60 +1,75 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView, Platform, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useState, useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useState, useCallback, useEffect } from 'react';
 import { COLORS } from '@/constants/colors';
+import { jobsApi, savedJobsApi, applicationsApi } from '@/services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
+
+interface Job {
+  id: number;
+  title?: string;
+  company?: string;
+  location?: string;
+  salary?: string;
+  match?: number;
+  type?: string;
+  posted?: string;
+  icon?: string;
+  description?: string;
+  requirements?: string[];
+  benefits?: string[];
+}
 
 export default function JobDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [saved, setSaved] = useState(false);
   const [isApplied, setIsApplied] = useState(false);
+  const [job, setJob] = useState<Job>({
+    id: params.id ? parseInt(Array.isArray(params.id) ? params.id[0] : params.id) : 1,
+    title: Array.isArray(params.title) ? params.title[0] : params.title,
+    company: Array.isArray(params.company) ? params.company[0] : params.company,
+    location: Array.isArray(params.location) ? params.location[0] : params.location,
+    salary: Array.isArray(params.salary) ? params.salary[0] : params.salary,
+    match: params.match ? parseInt(Array.isArray(params.match) ? params.match[0] : params.match) : undefined,
+    type: Array.isArray(params.type) ? params.type[0] : params.type,
+    posted: Array.isArray(params.posted) ? params.posted[0] : params.posted,
+    icon: Array.isArray(params.icon) ? params.icon[0] : params.icon,
+  });
+  const [loading, setLoading] = useState(true);
 
-  const job = {
-    id: params.id ? parseInt(params.id as string) : 1,
-    title: params.title || 'Senior React Developer',
-    company: params.company || 'Tech Corp Inc.',
-    location: params.location || 'Remote',
-    salary: params.salary || '₹6L - ₹9L',
-    match: params.match ? parseInt(params.match as string) : 95,
-    type: params.type || 'Full-time',
-    posted: params.posted || '2 days ago',
-    icon: params.icon || 'code',
-    description: `We are looking for an experienced React Developer to join our dynamic team. You will be responsible for developing and maintaining web applications using React.js and related technologies.
+  useEffect(() => {
+    loadJobDetails();
+  }, [params.id]);
 
-Key Responsibilities:
-• Develop new user-facing features using React.js
-• Build reusable components and front-end libraries
-• Optimize components for maximum performance
-• Collaborate with back-end developers and web designers
-• Translate designs and wireframes into high-quality code
-• Ensure technical feasibility of UI/UX designs
-
-Requirements:
-• 3+ years of experience with React.js
-• Strong proficiency in JavaScript, including ES6+
-• Experience with Redux or similar state management
-• Familiarity with RESTful APIs
-• Knowledge of modern authorization mechanisms
-• Experience with common front-end development tools`,
-    requirements: [
-      '3+ years of React.js experience',
-      'Strong JavaScript/TypeScript skills',
-      'Experience with Redux or Context API',
-      'Knowledge of RESTful APIs',
-      'Familiarity with Git version control',
-    ],
-    benefits: [
-      'Competitive salary package',
-      'Health insurance',
-      'Remote work flexibility',
-      'Professional development opportunities',
-      '401(k) matching',
-    ],
+  const loadJobDetails = async () => {
+    try {
+      setLoading(true);
+      const jobId = params.id ? parseInt(Array.isArray(params.id) ? params.id[0] : params.id) : 1;
+      const response = await jobsApi.getById(jobId);
+      const jobData = response.data || response;
+      setJob({
+        id: jobData.id || jobId,
+        title: jobData.title || job.title,
+        company: jobData.company || job.company,
+        location: jobData.location || job.location,
+        salary: jobData.salary || job.salary,
+        match: jobData.match || job.match,
+        type: jobData.type || job.type,
+        posted: jobData.posted || job.posted,
+        icon: jobData.icon || job.icon,
+        description: jobData.description || jobData.job_description || '',
+        requirements: jobData.requirements || jobData.requirements_list || [],
+        benefits: jobData.benefits || jobData.benefits_list || [],
+      });
+    } catch (err: any) {
+      console.error('Error loading job details:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useFocusEffect(
@@ -65,9 +80,10 @@ Requirements:
       }
       const checkAppliedStatus = async () => {
         try {
-          const appliedJobs = await AsyncStorage.getItem('appliedJobs');
-          const appliedJobsList = appliedJobs ? JSON.parse(appliedJobs) : [];
-          setIsApplied(appliedJobsList.includes(job.id));
+          const response = await applicationsApi.getAll();
+          const applications = Array.isArray(response) ? response : (response.data || []);
+          const jobId = job.id;
+          setIsApplied(applications.some((app: any) => (app.job_id || app.job?.id) === jobId));
         } catch (error) {
           console.error('Error checking applied status:', error);
         }
@@ -80,9 +96,8 @@ Requirements:
     useCallback(() => {
       const checkSavedStatus = async () => {
         try {
-          const savedJobs = await AsyncStorage.getItem('savedJobs');
-          const savedJobsList = savedJobs ? JSON.parse(savedJobs) : [];
-          setSaved(savedJobsList.includes(job.id));
+          const response = await savedJobsApi.check(job.id);
+          setSaved(response.is_saved || response.saved || false);
         } catch (error) {
           console.error('Error checking saved status:', error);
         }
@@ -93,16 +108,11 @@ Requirements:
 
   const handleSave = async () => {
     try {
-      const savedJobs = await AsyncStorage.getItem('savedJobs');
-      const savedJobsList = savedJobs ? JSON.parse(savedJobs) : [];
-      
       if (saved) {
-        const updatedList = savedJobsList.filter((id: number) => id !== job.id);
-        await AsyncStorage.setItem('savedJobs', JSON.stringify(updatedList));
+        await savedJobsApi.delete(job.id);
         setSaved(false);
       } else {
-        savedJobsList.push(job.id);
-        await AsyncStorage.setItem('savedJobs', JSON.stringify(savedJobsList));
+        await savedJobsApi.save(job.id);
         setSaved(true);
       }
     } catch (error) {
@@ -151,16 +161,22 @@ Requirements:
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.content}>
-          <View style={styles.jobHeader}>
-            <View style={styles.iconContainer}>
-              <Ionicons name={job.icon as any} size={32} color={COLORS.PRIMARY} />
-            </View>
-            <View style={styles.titleSection}>
-              <Text style={styles.jobTitle}>{job.title}</Text>
-              <Text style={styles.companyName}>{job.company}</Text>
-            </View>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+            <Text style={styles.loadingText}>Loading job details...</Text>
           </View>
+        ) : (
+          <View style={styles.content}>
+            <View style={styles.jobHeader}>
+              <View style={styles.iconContainer}>
+                <Ionicons name={(job.icon || 'briefcase') as any} size={32} color={COLORS.PRIMARY} />
+              </View>
+              <View style={styles.titleSection}>
+                <Text style={styles.jobTitle}>{job.title || 'Job Title'}</Text>
+                <Text style={styles.companyName}>{job.company || 'Company'}</Text>
+              </View>
+            </View>
 
           <View style={styles.badgesContainer}>
             <View style={styles.matchBadge}>
@@ -194,31 +210,38 @@ Requirements:
             </View>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Job Description</Text>
-            <Text style={styles.sectionContent}>{job.description}</Text>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Requirements</Text>
-            {job.requirements.map((req, index) => (
-              <View key={index} style={styles.listItem}>
-                <Ionicons name="checkmark-circle-outline" size={18} color={COLORS.PRIMARY} />
-                <Text style={styles.listText}>{req}</Text>
+            {job.description && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Job Description</Text>
+                <Text style={styles.sectionContent}>{job.description}</Text>
               </View>
-            ))}
-          </View>
+            )}
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Benefits</Text>
-            {job.benefits.map((benefit, index) => (
-              <View key={index} style={styles.listItem}>
-                <Ionicons name="star-outline" size={18} color={COLORS.PRIMARY} />
-                <Text style={styles.listText}>{benefit}</Text>
+            {job.requirements && job.requirements.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Requirements</Text>
+                {job.requirements.map((req, index) => (
+                  <View key={index} style={styles.listItem}>
+                    <Ionicons name="checkmark-circle-outline" size={18} color={COLORS.PRIMARY} />
+                    <Text style={styles.listText}>{req}</Text>
+                  </View>
+                ))}
               </View>
-            ))}
+            )}
+
+            {job.benefits && job.benefits.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Benefits</Text>
+                {job.benefits.map((benefit, index) => (
+                  <View key={index} style={styles.listItem}>
+                    <Ionicons name="star-outline" size={18} color={COLORS.PRIMARY} />
+                    <Text style={styles.listText}>{benefit}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
-        </View>
+        )}
       </ScrollView>
 
       <View style={styles.footer}>
@@ -417,5 +440,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginRight: 8,
     letterSpacing: 0.5,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.TEXT_SECONDARY,
   },
 });

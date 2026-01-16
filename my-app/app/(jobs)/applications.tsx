@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,57 +8,27 @@ import {
   Dimensions,
   SafeAreaView,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
 import { COLORS } from '@/constants/colors';
+import { applicationsApi } from '@/services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
 
-const applications = [
-  {
-    id: 1,
-    jobTitle: 'Senior React Developer',
-    company: 'Tech Corp Inc.',
-    status: 'under_review',
-    statusLabel: 'Under Review',
-    appliedDate: '2024-01-15',
-    match: 95,
-    icon: 'code',
-  },
-  {
-    id: 2,
-    jobTitle: 'Backend Engineer',
-    company: 'StartupXYZ',
-    status: 'interview',
-    statusLabel: 'Interview Scheduled',
-    appliedDate: '2024-01-12',
-    match: 92,
-    icon: 'server',
-  },
-  {
-    id: 3,
-    jobTitle: 'Full Stack Developer',
-    company: 'Digital Solutions',
-    status: 'shortlisted',
-    statusLabel: 'Shortlisted',
-    appliedDate: '2024-01-10',
-    match: 88,
-    icon: 'layers',
-  },
-  {
-    id: 4,
-    jobTitle: 'UI/UX Designer',
-    company: 'Creative Agency',
-    status: 'rejected',
-    statusLabel: 'Not Selected',
-    appliedDate: '2024-01-08',
-    match: 85,
-    icon: 'color-palette',
-  },
-];
+interface Application {
+  id: number;
+  job_title?: string;
+  jobTitle?: string;
+  company?: string;
+  status?: string;
+  applied_date?: string;
+  appliedDate?: string;
+  match?: number;
+  icon?: string;
+}
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -96,13 +67,39 @@ const getStatusIcon = (status: string) => {
 export default function ApplicationsScreen() {
   const router = useRouter();
   const [filter, setFilter] = useState('all');
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadApplications();
+    }, [])
+  );
+
+  const loadApplications = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await applicationsApi.getAll();
+      const apps = Array.isArray(response) ? response : (response.data || []);
+      setApplications(apps);
+    } catch (err: any) {
+      console.error('Error loading applications:', err);
+      setError(err.message || 'Failed to load applications');
+      setApplications([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredApplications =
     filter === 'all'
       ? applications
       : applications.filter((app) => app.status === filter);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Recently';
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
@@ -112,6 +109,27 @@ export default function ApplicationsScreen() {
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const getStatusLabel = (status?: string) => {
+    switch (status) {
+      case 'under_review': return 'Under Review';
+      case 'shortlisted': return 'Shortlisted';
+      case 'interview': return 'Interview Scheduled';
+      case 'rejected': return 'Not Selected';
+      case 'accepted': return 'Accepted';
+      default: return status || 'Pending';
+    }
+  };
+
+  const getJobIcon = (title?: string) => {
+    if (!title) return 'briefcase';
+    const lowerTitle = title.toLowerCase();
+    if (lowerTitle.includes('react') || lowerTitle.includes('frontend')) return 'code';
+    if (lowerTitle.includes('backend') || lowerTitle.includes('server')) return 'server';
+    if (lowerTitle.includes('design') || lowerTitle.includes('ui/ux')) return 'color-palette';
+    if (lowerTitle.includes('full stack') || lowerTitle.includes('fullstack')) return 'layers';
+    return 'briefcase';
   };
 
   return (
@@ -193,9 +211,22 @@ export default function ApplicationsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {filteredApplications.length === 0 ? (
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+            <Text style={styles.loadingText}>Loading applications...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={48} color={COLORS.ERROR} />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={loadApplications}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : filteredApplications.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="document-text-outline" size={64} color="#cbd5e0" />
+            <Ionicons name="document-text-outline" size={64} color={COLORS.TEXT_SECONDARY} />
             <Text style={styles.emptyTitle}>No Applications Found</Text>
             <Text style={styles.emptyText}>
               {filter === 'all'
@@ -212,74 +243,85 @@ export default function ApplicationsScreen() {
             )}
           </View>
         ) : (
-          filteredApplications.map((application) => (
-            <Pressable
-              key={application.id}
-              style={styles.applicationCard}
-              onPress={() => {
-                router.push({
-                  pathname: '/application-status',
-                  params: {
-                    applicationId: application.id.toString(),
-                    jobTitle: application.jobTitle,
-                    company: application.company,
-                    status: application.status,
-                  },
-                });
-              }}
-            >
-              <View style={styles.cardHeader}>
-                <View style={styles.iconContainer}>
-                  <Ionicons
-                    name={application.icon as any}
-                    size={24}
-                    color={COLORS.PRIMARY}
-                  />
-                </View>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.jobTitle}>{application.jobTitle}</Text>
-                  <Text style={styles.companyName}>{application.company}</Text>
-                </View>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    { backgroundColor: `${getStatusColor(application.status)}15` },
-                  ]}
-                >
-                  <Ionicons
-                    name={getStatusIcon(application.status) as any}
-                    size={14}
-                    color={getStatusColor(application.status)}
-                  />
-                  <Text
+          filteredApplications.map((application) => {
+            const jobTitle = application.job_title || application.jobTitle || 'Job Title';
+            const company = application.company || 'Company';
+            const status = application.status || 'pending';
+            const appliedDate = application.applied_date || application.appliedDate;
+            const match = application.match || 0;
+            const icon = application.icon || getJobIcon(jobTitle);
+            
+            return (
+              <Pressable
+                key={application.id}
+                style={styles.applicationCard}
+                onPress={() => {
+                  router.push({
+                    pathname: '/application-status',
+                    params: {
+                      applicationId: application.id.toString(),
+                      jobTitle: jobTitle,
+                      company: company,
+                      status: status,
+                    },
+                  });
+                }}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={styles.iconContainer}>
+                    <Ionicons
+                      name={icon as any}
+                      size={24}
+                      color={COLORS.PRIMARY}
+                    />
+                  </View>
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.jobTitle}>{jobTitle}</Text>
+                    <Text style={styles.companyName}>{company}</Text>
+                  </View>
+                  <View
                     style={[
-                      styles.statusText,
-                      { color: getStatusColor(application.status) },
+                      styles.statusBadge,
+                      { backgroundColor: `${getStatusColor(status)}15` },
                     ]}
                   >
-                    {application.statusLabel}
-                  </Text>
+                    <Ionicons
+                      name={getStatusIcon(status) as any}
+                      size={14}
+                      color={getStatusColor(status)}
+                    />
+                    <Text
+                      style={[
+                        styles.statusText,
+                        { color: getStatusColor(status) },
+                      ]}
+                    >
+                      {getStatusLabel(status)}
+                    </Text>
+                  </View>
                 </View>
-              </View>
 
-              <View style={styles.cardFooter}>
-                <View style={styles.footerItem}>
-                  <Ionicons name="calendar-outline" size={16} color={COLORS.TEXT_SECONDARY} />
-                  <Text style={styles.footerText}>
-                    Applied {formatDate(application.appliedDate)}
-                  </Text>
+                <View style={styles.cardFooter}>
+                  <View style={styles.footerItem}>
+                    <Ionicons name="calendar-outline" size={16} color={COLORS.TEXT_SECONDARY} />
+                    <Text style={styles.footerText}>
+                      Applied {formatDate(appliedDate)}
+                    </Text>
+                  </View>
+                  {match > 0 && (
+                    <View style={styles.matchBadge}>
+                      <Text style={styles.matchText}>{match}% Match</Text>
+                    </View>
+                  )}
                 </View>
-                <View style={styles.matchBadge}>
-                  <Text style={styles.matchText}>{application.match}% Match</Text>
-                </View>
-              </View>
 
-              <View style={styles.cardAction}>
-                <Text style={styles.actionText}>View Status</Text>
-                <Ionicons name="chevron-forward" size={20} color={COLORS.PRIMARY} />
-              </View>
-            </Pressable>
-          ))
+                <View style={styles.cardAction}>
+                  <Text style={styles.actionText}>View Status</Text>
+                  <Ionicons name="chevron-forward" size={20} color={COLORS.PRIMARY} />
+                </View>
+              </Pressable>
+            );
+          })
         )}
       </ScrollView>
     </SafeAreaView>
@@ -474,5 +516,40 @@ const styles = StyleSheet.create({
     fontSize: isSmallScreen ? 15 : 16,
     fontWeight: '700',
     color: COLORS.PRIMARY,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.TEXT_SECONDARY,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.ERROR,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    color: COLORS.TEXT_PRIMARY,
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

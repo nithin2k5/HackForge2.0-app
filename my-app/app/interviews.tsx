@@ -1,86 +1,60 @@
-import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView, Modal, TextInput, Pressable, Alert, Clipboard, Linking } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView, Modal, TextInput, Pressable, Alert, Clipboard, Linking, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/colors';
+import { interviewsApi } from '@/services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
 
-const interviews = [
-  {
-    id: 1,
-    jobTitle: 'Senior Full Stack Developer',
-    company: 'TechCorp',
-    date: 'Dec 15, 2024',
-    time: '10:00 AM',
-    type: 'Video Call',
-    interviewer: 'Sarah Johnson',
-    location: 'Zoom Meeting',
-    status: 'scheduled',
-    match: 98,
-    meetingLink: 'https://zoom.us/j/1234567890',
-    meetingId: '123 456 7890',
-    password: 'TechCorp2024',
-  },
-  {
-    id: 2,
-    jobTitle: 'Data Scientist',
-    company: 'DataLabs',
-    date: 'Dec 18, 2024',
-    time: '2:00 PM',
-    type: 'On-site',
-    interviewer: 'Michael Chen',
-    location: '123 Tech Street, San Francisco',
-    status: 'scheduled',
-    match: 89,
-    meetingLink: 'https://meet.google.com/xnc-adns-kvf',
-    meetingId: 'xnc-adns-kvf',
-    password: 'DataLabs2024',
-  },
-  {
-    id: 3,
-    jobTitle: 'Product Manager',
-    company: 'StartupXYZ',
-    date: 'Dec 10, 2024',
-    time: '11:00 AM',
-    type: 'Video Call',
-    interviewer: 'Emily Davis',
-    location: 'Google Meet',
-    status: 'completed',
-    match: 92,
-  },
-  {
-    id: 4,
-    jobTitle: 'UI/UX Designer',
-    company: 'Design Studio',
-    date: 'Dec 20, 2024',
-    time: '3:00 PM',
-    type: 'On-site',
-    interviewer: 'James Wilson',
-    location: '456 Design Ave, New York',
-    status: 'scheduled',
-    match: 85,
-  },
-  {
-    id: 5,
-    jobTitle: 'Backend Engineer',
-    company: 'CloudTech',
-    date: 'Dec 5, 2024',
-    time: '9:00 AM',
-    type: 'Video Call',
-    interviewer: 'Robert Brown',
-    location: 'Microsoft Teams',
-    status: 'cancelled',
-    match: 88,
-  },
-];
+interface Interview {
+  id: number;
+  job_title?: string;
+  jobTitle?: string;
+  company?: string;
+  date?: string;
+  time?: string;
+  type?: string;
+  interviewer?: string;
+  location?: string;
+  status?: string;
+  match?: number;
+  meeting_link?: string;
+  meetingLink?: string;
+  meeting_id?: string;
+  meetingId?: string;
+  password?: string;
+}
 
 export default function InterviewsScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState('all');
-  const [selectedInterview, setSelectedInterview] = useState<any>(null);
+  const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
   const [showJoinModal, setShowJoinModal] = useState(false);
+  const [interviews, setInterviews] = useState<Interview[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadInterviews();
+  }, []);
+
+  const loadInterviews = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await interviewsApi.getAll();
+      const interviewsList = Array.isArray(response) ? response : (response.data || []);
+      setInterviews(interviewsList);
+    } catch (err: any) {
+      console.error('Error loading interviews:', err);
+      setError(err.message || 'Failed to load interviews');
+      setInterviews([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filters = [
     { id: 'all', label: 'All' },
@@ -126,11 +100,12 @@ export default function InterviewsScreen() {
   };
 
   const handleOpenMeeting = async () => {
-    if (selectedInterview?.meetingLink) {
+    const meetingLink = selectedInterview?.meeting_link || selectedInterview?.meetingLink;
+    if (meetingLink) {
       try {
-        const canOpen = await Linking.canOpenURL(selectedInterview.meetingLink);
+        const canOpen = await Linking.canOpenURL(meetingLink);
         if (canOpen) {
-          await Linking.openURL(selectedInterview.meetingLink);
+          await Linking.openURL(meetingLink);
         }
       } catch (error) {
         console.error('Failed to open meeting link:', error);
@@ -168,7 +143,20 @@ export default function InterviewsScreen() {
         </View>
 
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {filteredInterviews.length === 0 ? (
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+              <Text style={styles.loadingText}>Loading interviews...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle-outline" size={48} color={COLORS.ERROR} />
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={loadInterviews}>
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : filteredInterviews.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="calendar-outline" size={64} color={COLORS.TEXT_SECONDARY} />
               <Text style={styles.emptyTitle}>No Interviews</Text>
@@ -180,7 +168,19 @@ export default function InterviewsScreen() {
             </View>
           ) : (
             filteredInterviews.map((interview) => {
-              const statusInfo = getStatusInfo(interview.status);
+              const statusInfo = getStatusInfo(interview.status || '');
+              const jobTitle = interview.job_title || interview.jobTitle || 'Job Title';
+              const company = interview.company || 'Company';
+              const date = interview.date || 'Date TBD';
+              const time = interview.time || 'Time TBD';
+              const type = interview.type || 'Video Call';
+              const interviewer = interview.interviewer || 'Interviewer';
+              const location = interview.location || 'Location TBD';
+              const match = interview.match || 0;
+              const meetingLink = interview.meeting_link || interview.meetingLink;
+              const meetingId = interview.meeting_id || interview.meetingId;
+              const password = interview.password;
+              
               return (
                 <View key={interview.id} style={styles.interviewCard}>
                   <View style={styles.cardHeader}>
@@ -189,8 +189,8 @@ export default function InterviewsScreen() {
                         <Ionicons name="business" size={20} color={COLORS.PRIMARY} />
                       </View>
                       <View style={styles.jobDetails}>
-                        <Text style={styles.jobTitle}>{interview.jobTitle}</Text>
-                        <Text style={styles.companyName}>{interview.company}</Text>
+                        <Text style={styles.jobTitle}>{jobTitle}</Text>
+                        <Text style={styles.companyName}>{company}</Text>
                       </View>
                     </View>
                     <View style={styles.statusContainer}>
@@ -200,44 +200,46 @@ export default function InterviewsScreen() {
                           {statusInfo.label}
                         </Text>
                       </View>
-                      <Text style={styles.matchText}>Match: {interview.match}%</Text>
+                      {match > 0 && <Text style={styles.matchText}>Match: {match}%</Text>}
                     </View>
                   </View>
 
                   <View style={styles.detailsGrid}>
                     <View style={styles.detailItem}>
                       <Ionicons name="calendar-outline" size={18} color={COLORS.TEXT_SECONDARY} />
-                      <Text style={styles.detailText}>{interview.date}</Text>
+                      <Text style={styles.detailText}>{date}</Text>
                     </View>
                     <View style={styles.detailItem}>
                       <Ionicons name="time-outline" size={18} color={COLORS.TEXT_SECONDARY} />
-                      <Text style={styles.detailText}>{interview.time}</Text>
+                      <Text style={styles.detailText}>{time}</Text>
                     </View>
                     <View style={styles.detailItem}>
-                      <Ionicons name={getTypeIcon(interview.type) as any} size={18} color={COLORS.TEXT_SECONDARY} />
-                      <Text style={styles.detailText}>{interview.type}</Text>
+                      <Ionicons name={getTypeIcon(type) as any} size={18} color={COLORS.TEXT_SECONDARY} />
+                      <Text style={styles.detailText}>{type}</Text>
                     </View>
                     <View style={styles.detailItem}>
                       <Ionicons name="person-outline" size={18} color={COLORS.TEXT_SECONDARY} />
-                      <Text style={styles.detailText}>{interview.interviewer}</Text>
+                      <Text style={styles.detailText}>{interviewer}</Text>
                     </View>
                   </View>
 
                   <View style={styles.locationBox}>
                     <Text style={styles.locationLabel}>Location/Details:</Text>
-                    <Text style={styles.locationText}>{interview.location}</Text>
+                    <Text style={styles.locationText}>{location}</Text>
                   </View>
 
                   <View style={styles.actionButtons}>
                     {interview.status === 'scheduled' && (
                       <>
-                        <TouchableOpacity 
-                          style={styles.primaryButton}
-                          onPress={() => handleJoinInterview(interview)}
-                        >
-                          <Ionicons name="videocam" size={18} color={COLORS.TEXT_PRIMARY} />
-                          <Text style={styles.primaryButtonText}>Join Interview</Text>
-                        </TouchableOpacity>
+                        {meetingLink && (
+                          <TouchableOpacity 
+                            style={styles.primaryButton}
+                            onPress={() => handleJoinInterview({ ...interview, meetingLink, meetingId, password })}
+                          >
+                            <Ionicons name="videocam" size={18} color={COLORS.TEXT_PRIMARY} />
+                            <Text style={styles.primaryButtonText}>Join Interview</Text>
+                          </TouchableOpacity>
+                        )}
                         <TouchableOpacity style={styles.secondaryButton}>
                           <Text style={styles.secondaryButtonText}>Reschedule</Text>
                         </TouchableOpacity>
@@ -290,99 +292,118 @@ export default function InterviewsScreen() {
               </TouchableOpacity>
             </View>
 
-            {selectedInterview && (
-              <>
-                <View style={styles.interviewInfo}>
-                  <Text style={styles.modalJobTitle}>{selectedInterview.jobTitle}</Text>
-                  <Text style={styles.modalCompany}>{selectedInterview.company}</Text>
-                  
-                  <View style={styles.modalDetailRow}>
-                    <Ionicons name="calendar-outline" size={18} color={COLORS.TEXT_SECONDARY} />
-                    <Text style={styles.modalDetailText}>
-                      {selectedInterview.date} at {selectedInterview.time}
-                    </Text>
+            {selectedInterview && (() => {
+              const jobTitle = selectedInterview.job_title || selectedInterview.jobTitle || 'Job Title';
+              const company = selectedInterview.company || 'Company';
+              const date = selectedInterview.date || 'Date TBD';
+              const time = selectedInterview.time || 'Time TBD';
+              const interviewer = selectedInterview.interviewer || 'Interviewer';
+              const meetingLink = selectedInterview.meeting_link || selectedInterview.meetingLink || '';
+              const meetingId = selectedInterview.meeting_id || selectedInterview.meetingId || '';
+              const password = selectedInterview.password || '';
+              
+              return (
+                <>
+                  <View style={styles.interviewInfo}>
+                    <Text style={styles.modalJobTitle}>{jobTitle}</Text>
+                    <Text style={styles.modalCompany}>{company}</Text>
+                    
+                    <View style={styles.modalDetailRow}>
+                      <Ionicons name="calendar-outline" size={18} color={COLORS.TEXT_SECONDARY} />
+                      <Text style={styles.modalDetailText}>
+                        {date} at {time}
+                      </Text>
+                    </View>
+                    
+                    <View style={styles.modalDetailRow}>
+                      <Ionicons name="person-outline" size={18} color={COLORS.TEXT_SECONDARY} />
+                      <Text style={styles.modalDetailText}>
+                        Interviewer: {interviewer}
+                      </Text>
+                    </View>
                   </View>
-                  
-                  <View style={styles.modalDetailRow}>
-                    <Ionicons name="person-outline" size={18} color={COLORS.TEXT_SECONDARY} />
-                    <Text style={styles.modalDetailText}>
-                      Interviewer: {selectedInterview.interviewer}
-                    </Text>
-                  </View>
-                </View>
 
-                <View style={styles.meetingSection}>
-                  <Text style={styles.sectionTitle}>Meeting Information</Text>
-                  
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Meeting Link</Text>
-                    <View style={styles.inputContainer}>
-                      <TextInput
-                        style={styles.input}
-                        value={selectedInterview.meetingLink || ''}
-                        editable={false}
-                        selectTextOnFocus
-                      />
-                      <View style={styles.inputActions}>
-                        <TouchableOpacity
-                          style={styles.iconButton}
-                          onPress={() => handleCopy(selectedInterview.meetingLink || '')}
-                        >
-                          <Ionicons name="copy-outline" size={20} color={COLORS.PRIMARY} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.iconButton}
-                          onPress={handleOpenMeeting}
-                        >
-                          <Ionicons name="open-outline" size={20} color={COLORS.PRIMARY} />
-                        </TouchableOpacity>
+                  {meetingLink && (
+                    <View style={styles.meetingSection}>
+                      <Text style={styles.sectionTitle}>Meeting Information</Text>
+                      
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Meeting Link</Text>
+                        <View style={styles.inputContainer}>
+                          <TextInput
+                            style={styles.input}
+                            value={meetingLink}
+                            editable={false}
+                            selectTextOnFocus
+                          />
+                          <View style={styles.inputActions}>
+                            <TouchableOpacity
+                              style={styles.iconButton}
+                              onPress={() => handleCopy(meetingLink)}
+                            >
+                              <Ionicons name="copy-outline" size={20} color={COLORS.PRIMARY} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.iconButton}
+                              onPress={handleOpenMeeting}
+                            >
+                              <Ionicons name="open-outline" size={20} color={COLORS.PRIMARY} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
                       </View>
-                    </View>
-                  </View>
 
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Meeting ID</Text>
-                    <View style={styles.inputContainer}>
-                      <TextInput
-                        style={styles.input}
-                        value={selectedInterview.meetingId || ''}
-                        editable={false}
-                        selectTextOnFocus
-                      />
-                      <TouchableOpacity
-                        style={styles.iconButton}
-                        onPress={() => handleCopy(selectedInterview.meetingId || '')}
-                      >
-                        <Ionicons name="copy-outline" size={20} color={COLORS.PRIMARY} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                      {meetingId && (
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.inputLabel}>Meeting ID</Text>
+                          <View style={styles.inputContainer}>
+                            <TextInput
+                              style={styles.input}
+                              value={meetingId}
+                              editable={false}
+                              selectTextOnFocus
+                            />
+                            <TouchableOpacity
+                              style={styles.iconButton}
+                              onPress={() => handleCopy(meetingId)}
+                            >
+                              <Ionicons name="copy-outline" size={20} color={COLORS.PRIMARY} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      )}
 
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Password</Text>
-                    <View style={styles.inputContainer}>
-                      <TextInput
-                        style={styles.input}
-                        value={selectedInterview.password || ''}
-                        editable={false}
-                        selectTextOnFocus
-                        secureTextEntry
-                      />
-                      <TouchableOpacity
-                        style={styles.iconButton}
-                        onPress={() => handleCopy(selectedInterview.password || '')}
-                      >
-                        <Ionicons name="copy-outline" size={20} color={COLORS.PRIMARY} />
-                      </TouchableOpacity>
+                      {password && (
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.inputLabel}>Password</Text>
+                          <View style={styles.inputContainer}>
+                            <TextInput
+                              style={styles.input}
+                              value={password}
+                              editable={false}
+                              selectTextOnFocus
+                              secureTextEntry
+                            />
+                            <TouchableOpacity
+                              style={styles.iconButton}
+                              onPress={() => handleCopy(password)}
+                            >
+                              <Ionicons name="copy-outline" size={20} color={COLORS.PRIMARY} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      )}
                     </View>
-                  </View>
-                </View>
+                  )}
+                </>
+              );
+            })()}
 
-                <TouchableOpacity style={styles.openMeetingButton} onPress={handleOpenMeeting}>
-                  <Ionicons name="videocam" size={20} color={COLORS.TEXT_PRIMARY} />
-                  <Text style={styles.openMeetingText}>Open Meeting</Text>
-                </TouchableOpacity>
-              </>
+            {selectedInterview && (selectedInterview.meeting_link || selectedInterview.meetingLink) && (
+              <TouchableOpacity style={styles.openMeetingButton} onPress={handleOpenMeeting}>
+                <Ionicons name="videocam" size={20} color={COLORS.TEXT_PRIMARY} />
+                <Text style={styles.openMeetingText}>Open Meeting</Text>
+              </TouchableOpacity>
             )}
           </Pressable>
         </Pressable>
@@ -738,6 +759,41 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_PRIMARY,
     paddingVertical: 12,
     paddingRight: 4,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.TEXT_SECONDARY,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.ERROR,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    color: COLORS.TEXT_PRIMARY,
+    fontSize: 16,
+    fontWeight: '700',
   },
   iconButton: {
     width: 36,

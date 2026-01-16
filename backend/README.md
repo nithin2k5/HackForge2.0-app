@@ -16,13 +16,23 @@ npm install
 Create a `.env` file in the backend directory with the following variables:
 
 ```
-PORT=5000
+PORT=8081
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=your_password
 DB_NAME=hackforge_db
 JWT_SECRET=your-secret-key-change-in-production
 NODE_ENV=development
+
+# Email Configuration (for nodemailer)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+APP_NAME=HackForge
+FRONTEND_URL=http://localhost:3000
+USE_DEEP_LINK=true
 ```
 
 ### 3. Initialize Database
@@ -39,6 +49,14 @@ Or manually import the schema:
 mysql -u root -p < database/schema.sql
 ```
 
+**Important:** After setting up the database, run the migration to add email verification fields:
+
+```bash
+npm run add-verification-fields
+```
+
+This adds the required columns for email verification and password reset functionality.
+
 ### 4. Start the Server
 
 For development with auto-reload:
@@ -53,13 +71,17 @@ For production:
 npm start
 ```
 
-The server will run on `http://localhost:5000` (or the PORT specified in .env)
+The server will run on `http://localhost:8081` (or the PORT specified in .env)
 
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Login user
+- `POST /api/auth/register` - Register a new user (sends verification email)
+- `POST /api/auth/login` - Login user (requires verified email)
+- `GET /api/auth/verify-email?token=<token>` - Verify email address
+- `POST /api/auth/resend-verification` - Resend verification email
+- `POST /api/auth/forgot-password` - Request password reset (sends reset email)
+- `POST /api/auth/reset-password` - Reset password with token
 - `GET /api/auth/profile` - Get user profile (requires auth)
 - `PUT /api/auth/profile` - Update user profile (requires auth)
 

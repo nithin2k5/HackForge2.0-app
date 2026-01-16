@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { ScrollView, View, Text, TextInput, TouchableOpacity, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions, BackHandler } from 'react-native';
+import { ScrollView, View, Text, TextInput, TouchableOpacity, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions, BackHandler, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { COLORS } from '@/constants/colors';
+import * as DocumentPicker from 'expo-document-picker';
+import { resumesApi } from '@/services/api';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
@@ -32,6 +34,7 @@ export default function ProfileSetupScreen() {
     workLocation: '',
     workAuthorization: '',
     resume: null as string | null,
+    resumeFile: null as { uri: string; name: string; size: number; mimeType: string } | null,
   });
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -96,7 +99,7 @@ export default function ProfileSetupScreen() {
     };
   }, []);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (loading) return;
     
     if (timeoutRef.current) {
@@ -104,17 +107,60 @@ export default function ProfileSetupScreen() {
     }
     
     setLoading(true);
-    signIn();
     
-    timeoutRef.current = setTimeout(() => {
+    try {
+      if (formData.resumeFile) {
+        await resumesApi.upload(
+          formData.resumeFile.uri,
+          formData.resumeFile.name,
+          formData.resumeFile.mimeType
+        );
+      }
+      
+      signIn();
+      
+      timeoutRef.current = setTimeout(() => {
+        setLoading(false);
+        router.replace('/dashboard');
+        timeoutRef.current = null;
+      }, 1500);
+    } catch (err: any) {
       setLoading(false);
-      router.replace('/dashboard');
-      timeoutRef.current = null;
-    }, 1500);
+      Alert.alert('Error', err.message || 'Failed to upload resume. Please try again.');
+    }
   };
 
-  const handleResumeUpload = () => {
-    setFormData({ ...formData, resume: 'resume.pdf' });
+  const handleResumeUpload = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) {
+        return;
+      }
+
+      const file = result.assets[0];
+      
+      if (file.size && file.size > 5 * 1024 * 1024) {
+        Alert.alert('Error', 'File size must be less than 5MB');
+        return;
+      }
+
+      setFormData({
+        ...formData,
+        resume: file.name,
+        resumeFile: {
+          uri: file.uri,
+          name: file.name,
+          size: file.size || 0,
+          mimeType: file.mimeType || 'application/pdf',
+        },
+      });
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to pick document');
+    }
   };
 
   const handleInputFocus = (inputKey: string) => {
@@ -870,7 +916,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: isSmallScreen ? 15 : 16,
-    color: COLORS.PRIMARY,
+    color: COLORS.TEXT_PRIMARY,
     fontWeight: '500',
     padding: 0,
     margin: 0,
@@ -912,7 +958,7 @@ const styles = StyleSheet.create({
   textArea: {
     flex: 1,
     fontSize: isSmallScreen ? 15 : 16,
-    color: COLORS.PRIMARY,
+    color: COLORS.TEXT_PRIMARY,
     fontWeight: '500',
     minHeight: isSmallScreen ? 80 : 90,
     padding: 0,

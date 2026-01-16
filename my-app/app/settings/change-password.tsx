@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: isSmallScreen ? 16 : 20,
     paddingVertical: isSmallScreen ? 16 : 18,
     fontSize: isSmallScreen ? 15 : 16,
-    color: COLORS.PRIMARY,
+    color: COLORS.TEXT_PRIMARY,
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
