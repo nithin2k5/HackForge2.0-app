@@ -19,7 +19,7 @@ export default function JobDetailScreen() {
     title: params.title || 'Senior React Developer',
     company: params.company || 'Tech Corp Inc.',
     location: params.location || 'Remote',
-    salary: params.salary || '$80k - $120k',
+    salary: params.salary || '₹6L - ₹9L',
     match: params.match ? parseInt(params.match as string) : 95,
     type: params.type || 'Full-time',
     posted: params.posted || '2 days ago',

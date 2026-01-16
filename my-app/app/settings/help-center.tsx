@@ -165,6 +165,16 @@ export default function HelpCenterScreen() {
             <View style={styles.supportSection}>
               <Text style={styles.sectionTitle}>Get Support</Text>
               <View style={styles.supportOptions}>
+                <TouchableOpacity
+                  style={styles.supportCard}
+                  onPress={() => router.push('/chatbot' as any)}
+                >
+                  <View style={styles.supportIcon}>
+                    <Ionicons name="chatbubbles" size={28} color={COLORS.PRIMARY} />
+                  </View>
+                  <Text style={styles.supportTitle}>Chat Assistant</Text>
+                  <Text style={styles.supportDescription}>Get instant help</Text>
+                </TouchableOpacity>
                 {supportOptions.map((option) => (
                   <TouchableOpacity
                     key={option.id}

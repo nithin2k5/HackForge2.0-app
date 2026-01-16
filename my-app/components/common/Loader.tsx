@@ -1,4 +1,5 @@
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { COLORS } from '@/constants/colors';
 
 interface LoaderProps {
   message?: string;
@@ -6,7 +7,7 @@ interface LoaderProps {
   color?: string;
 }
 
-export default function Loader({ message, size = 'large', color = '#041F2B' }: LoaderProps) {
+export default function Loader({ message, size = 'large', color = COLORS.PRIMARY }: LoaderProps) {
   return (
     <View style={styles.container}>
       <View style={styles.loaderContainer}>
@@ -26,7 +27,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(10, 10, 15, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 9999,
@@ -39,7 +40,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     fontWeight: '600',
-    color: '#041F2B',
+    color: COLORS.TEXT_PRIMARY,
     textAlign: 'center',
   },
 });

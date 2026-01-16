@@ -160,7 +160,7 @@ export default function JobApplicationScreen() {
             <Text style={styles.inputLabel}>Expected Salary *</Text>
             <TextInput
               style={[styles.input, isSmallScreen && styles.inputSmall]}
-              placeholder="e.g., $80,000 - $100,000"
+              placeholder="e.g., ₹6,00,000 - ₹7,50,000"
               placeholderTextColor="#9ca3af"
               value={formData.expectedSalary}
               onChangeText={(text) => setFormData({ ...formData, expectedSalary: text })}

@@ -417,7 +417,7 @@ export default function ProfileSetupScreen() {
                   <Ionicons name="cash-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, isSmallScreen && styles.inputSmall]}
-                    placeholder="$50k - $70k or Negotiable"
+                    placeholder="₹4L - ₹5.5L or Negotiable"
                     placeholderTextColor={COLORS.TEXT_SECONDARY}
                     value={formData.salaryExpectation}
                     onChangeText={(value) => setFormData({ ...formData, salaryExpectation: value })}

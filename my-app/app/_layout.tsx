@@ -49,6 +49,9 @@ export default function RootLayout() {
             <Stack.Screen name="settings" options={{ headerShown: false }} />
             <Stack.Screen name="dashboard" options={{ headerShown: false }} />
             <Stack.Screen name="notifications" options={{ headerShown: false }} />
+            <Stack.Screen name="interviews" options={{ headerShown: false }} />
+            <Stack.Screen name="suggestions" options={{ headerShown: false }} />
+            <Stack.Screen name="chatbot" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
           <StatusBar style="auto" />

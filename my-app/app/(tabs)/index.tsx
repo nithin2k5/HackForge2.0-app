@@ -282,6 +282,13 @@ export default function HomeScreen() {
         </View>
       </View>
     </ScrollView>
+
+    <TouchableOpacity
+      style={styles.chatbotButton}
+      onPress={() => router.push('/chatbot' as any)}
+    >
+      <Ionicons name="chatbubbles" size={24} color={COLORS.TEXT_PRIMARY} />
+    </TouchableOpacity>
     </>
   );
 }
@@ -680,5 +687,22 @@ const styles = StyleSheet.create({
   },
   ctaButtonIcon: {
     marginLeft: 4,
+  },
+  chatbotButton: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.PRIMARY,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.PRIMARY,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
   },
 });

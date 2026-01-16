@@ -8,9 +8,9 @@ const { width: screenWidth } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
 
 const companyJobs = [
-  { id: 1, title: 'Senior React Developer', location: 'Remote', salary: '$80k - $120k', match: 95 },
-  { id: 2, title: 'Backend Engineer', location: 'Hybrid', salary: '$70k - $100k', match: 92 },
-  { id: 3, title: 'DevOps Specialist', location: 'Remote', salary: '$90k - $130k', match: 88 },
+  { id: 1, title: 'Senior React Developer', location: 'Remote', salary: '₹6L - ₹9L', match: 95 },
+  { id: 2, title: 'Backend Engineer', location: 'Hybrid', salary: '₹5L - ₹7L', match: 92 },
+  { id: 3, title: 'DevOps Specialist', location: 'Remote', salary: '₹7L - ₹10L', match: 88 },
 ];
 
 export default function CompanyDetailScreen() {

@@ -13,7 +13,7 @@ export default function ProjectDetailScreen() {
 
   const title = Array.isArray(params.title) ? params.title[0] : (params.title || 'Project Title');
   const client = Array.isArray(params.client) ? params.client[0] : (params.client || 'Client Name');
-  const budget = Array.isArray(params.budget) ? params.budget[0] : (params.budget || '$0');
+  const budget = Array.isArray(params.budget) ? params.budget[0] : (params.budget || '₹0');
   const duration = Array.isArray(params.duration) ? params.duration[0] : (params.duration || 'N/A');
   const skills = Array.isArray(params.skills) ? params.skills[0] : (params.skills || '');
   const match = Array.isArray(params.match) ? params.match[0] : (params.match || '0');

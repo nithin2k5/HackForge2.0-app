@@ -54,11 +54,13 @@ export default function DashboardScreen() {
 
   const menuItems = [
     { id: 'home', icon: 'home-outline', label: 'Dashboard', activeIcon: 'home', route: null },
+    { id: 'suggestions', icon: 'sparkles-outline', label: 'Suggestions', activeIcon: 'sparkles', route: '/suggestions' },
     { id: 'jobs', icon: 'briefcase-outline', label: 'Jobs', activeIcon: 'briefcase', route: '/jobs' },
     { id: 'companies', icon: 'business-outline', label: 'Companies', activeIcon: 'business', route: '/companies' },
     { id: 'projects', icon: 'folder-outline', label: 'Projects', activeIcon: 'folder', route: '/projects' },
     { id: 'saved', icon: 'bookmark-outline', label: 'Saved Jobs', activeIcon: 'bookmark', route: '/saved-jobs' },
     { id: 'applications', icon: 'document-text-outline', label: 'Applications', activeIcon: 'document-text', route: '/applications' },
+    { id: 'interviews', icon: 'videocam-outline', label: 'Interviews', activeIcon: 'videocam', route: '/interviews' },
     { id: 'profile', icon: 'person-outline', label: 'Profile', activeIcon: 'person', route: null },
     { id: 'settings', icon: 'settings-outline', label: 'Settings', activeIcon: 'settings', route: null },
   ];
@@ -69,7 +71,7 @@ export default function DashboardScreen() {
       title: 'Senior React Developer',
       company: 'Tech Corp Inc.',
       location: 'Remote',
-      salary: '$80k - $120k',
+      salary: '₹6L - ₹9L',
       match: 95,
       type: 'Full-time',
       posted: '2 days ago',
@@ -80,7 +82,7 @@ export default function DashboardScreen() {
       title: 'Backend Engineer',
       company: 'StartupXYZ',
       location: 'Hybrid',
-      salary: '$70k - $100k',
+      salary: '₹5L - ₹7L',
       match: 92,
       type: 'Full-time',
       posted: '5 days ago',
@@ -91,7 +93,7 @@ export default function DashboardScreen() {
       title: 'Full Stack Developer',
       company: 'Digital Solutions',
       location: 'On-site',
-      salary: '$85k - $130k',
+      salary: '₹6.5L - ₹10L',
       match: 88,
       type: 'Full-time',
       posted: '1 week ago',
@@ -102,7 +104,7 @@ export default function DashboardScreen() {
       title: 'UI/UX Designer',
       company: 'Creative Agency',
       location: 'Remote',
-      salary: '$60k - $90k',
+      salary: '₹4.5L - ₹7L',
       match: 85,
       type: 'Contract',
       posted: '3 days ago',
@@ -116,7 +118,7 @@ export default function DashboardScreen() {
       title: 'E-commerce Platform',
       client: 'Retail Corp',
       status: 'Active',
-      budget: '$15k',
+      budget: '₹1.2L',
       deadline: '2 weeks',
       icon: 'cart',
     },
@@ -125,7 +127,7 @@ export default function DashboardScreen() {
       title: 'Mobile App Development',
       client: 'Tech Startup',
       status: 'In Progress',
-      budget: '$25k',
+      budget: '₹2L',
       deadline: '1 month',
       icon: 'phone-portrait',
     },
@@ -134,7 +136,7 @@ export default function DashboardScreen() {
       title: 'Website Redesign',
       client: 'Design Studio',
       status: 'Completed',
-      budget: '$8k',
+      budget: '₹65k',
       deadline: 'Completed',
       icon: 'globe',
     },
@@ -636,6 +638,17 @@ export default function DashboardScreen() {
         <View style={styles.settingsCard}>
           <Pressable
             style={styles.settingsRow}
+            onPress={() => router.push('/chatbot' as any)}
+          >
+            <View style={styles.settingsRowContent}>
+              <Ionicons name="chatbubbles-outline" size={22} color={COLORS.PRIMARY} />
+              <Text style={styles.settingsLabel}>Chat Assistant</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.TEXT_SECONDARY} />
+          </Pressable>
+          <View style={styles.settingsDivider} />
+          <Pressable
+            style={styles.settingsRow}
             onPress={() => router.push('/settings/help-center')}
           >
             <View style={styles.settingsRowContent}>
@@ -727,6 +740,13 @@ export default function DashboardScreen() {
           {renderContent()}
         </ScrollView>
       </View>
+
+      <TouchableOpacity
+        style={styles.chatbotButton}
+        onPress={() => router.push('/chatbot' as any)}
+      >
+        <Ionicons name="chatbubbles" size={24} color={COLORS.TEXT_PRIMARY} />
+      </TouchableOpacity>
 
       {drawerOpen && (
         <>
@@ -1560,5 +1580,22 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#ffffff',
     letterSpacing: 0.5,
+  },
+  chatbotButton: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.PRIMARY,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.PRIMARY,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
   },
 });

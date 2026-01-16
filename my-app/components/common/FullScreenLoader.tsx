@@ -1,5 +1,6 @@
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COLORS } from '@/constants/colors';
 
 interface FullScreenLoaderProps {
   message?: string;
@@ -10,9 +11,9 @@ export default function FullScreenLoader({ message = 'Loading...' }: FullScreenL
     <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Ionicons name="briefcase" size={48} color="#041F2B" />
+          <Ionicons name="briefcase" size={48} color={COLORS.PRIMARY} />
         </View>
-        <ActivityIndicator size="large" color="#041F2B" style={styles.spinner} />
+        <ActivityIndicator size="large" color={COLORS.PRIMARY} style={styles.spinner} />
         <Text style={styles.message}>{message.toUpperCase()}</Text>
       </View>
     </View>
@@ -22,7 +23,7 @@ export default function FullScreenLoader({ message = 'Loading...' }: FullScreenL
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.BACKGROUND,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -34,7 +35,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#e8f4f8',
+    backgroundColor: COLORS.SECONDARY,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
@@ -45,7 +46,7 @@ const styles = StyleSheet.create({
   message: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#4a5568',
+    color: COLORS.TEXT_SECONDARY,
     letterSpacing: 1,
   },
 });
