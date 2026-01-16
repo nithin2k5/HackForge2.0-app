@@ -1,14 +1,30 @@
 import { ScrollView, View, Text, TouchableOpacity, Pressable, StyleSheet, Dimensions } from 'react-native';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'expo-router';
+import Loader from '@/components/Loader';
 
 export default function HomeScreen() {
   const { signIn } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
   const scrollPosition = useRef(0);
   const cardWidth = Dimensions.get('window').width - 80;
   const cardGap = 16;
+
+  const handleGetStarted = () => {
+    router.push('/auth');
+  };
+
+  const handleSignIn = () => {
+    setLoading(true);
+    setTimeout(() => {
+      signIn();
+      setLoading(false);
+    }, 1000);
+  };
 
   const benefitCards = [
     {
@@ -52,11 +68,13 @@ export default function HomeScreen() {
   }, [cardWidth, cardGap]);
 
   return (
-    <ScrollView 
-      style={styles.scrollView}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
+    <>
+      {loading && <Loader message="Signing you in..." />}
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.logoContainer}>
@@ -77,11 +95,11 @@ export default function HomeScreen() {
           Upload your resume once. Let our intelligent system match you with the perfect opportunities.
         </Text>
         <View style={styles.heroButtons}>
-          <Pressable style={styles.primaryButton} onPress={signIn}>
+          <Pressable style={styles.primaryButton} onPress={handleGetStarted}>
             <Text style={styles.primaryButtonText}>Get Started</Text>
             <Ionicons name="arrow-forward" size={20} color="#ffffff" style={styles.buttonIcon} />
           </Pressable>
-          <TouchableOpacity style={styles.secondaryButton} onPress={signIn}>
+          <TouchableOpacity style={styles.secondaryButton} onPress={handleGetStarted}>
             <Ionicons name="cloud-upload-outline" size={20} color="#041F2B" style={styles.buttonIcon} />
             <Text style={styles.secondaryButtonText}>Upload Resume</Text>
           </TouchableOpacity>
@@ -249,7 +267,7 @@ export default function HomeScreen() {
             <Text style={styles.ctaDescription}>
               Join thousands of professionals and companies already using groei
             </Text>
-            <Pressable style={styles.ctaButton} onPress={signIn}>
+            <Pressable style={styles.ctaButton} onPress={handleGetStarted}>
               <Text style={styles.ctaButtonText}>Create Your Account</Text>
               <Ionicons name="arrow-forward" size={20} color="#ffffff" style={styles.ctaButtonIcon} />
             </Pressable>
@@ -257,6 +275,7 @@ export default function HomeScreen() {
         </View>
       </View>
     </ScrollView>
+    </>
   );
 }
 
@@ -288,10 +307,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   logoText: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 26,
+    fontWeight: '900',
     color: '#041F2B',
-    letterSpacing: -0.5,
+    letterSpacing: 2,
   },
   heroSection: {
     paddingHorizontal: 24,
@@ -299,25 +318,27 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   heroTitle: {
-    fontSize: 36,
-    fontWeight: '800',
+    fontSize: 38,
+    fontWeight: '900',
     color: '#041F2B',
     marginBottom: 12,
-    letterSpacing: -1,
-    lineHeight: 44,
+    letterSpacing: -0.5,
+    lineHeight: 46,
   },
   heroSubtitle: {
     fontSize: 18,
     color: '#2d3748',
     marginBottom: 16,
     lineHeight: 26,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   heroDescription: {
     fontSize: 16,
     color: '#4a5568',
     marginBottom: 32,
     lineHeight: 24,
+    fontWeight: '500',
   },
   heroButtons: {
     gap: 12,
@@ -339,8 +360,9 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: '#ffffff',
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     marginRight: 8,
+    letterSpacing: 0.5,
   },
   buttonIcon: {
     marginLeft: 4,
@@ -359,8 +381,9 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: '#041F2B',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     marginLeft: 8,
+    letterSpacing: 0.3,
   },
   statsSection: {
     flexDirection: 'row',
@@ -378,15 +401,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statNumber: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 34,
+    fontWeight: '900',
     color: '#041F2B',
     marginBottom: 4,
+    letterSpacing: -0.5,
   },
   statLabel: {
     fontSize: 14,
     color: '#4a5568',
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   statDivider: {
     width: 1,
@@ -400,17 +425,18 @@ const styles = StyleSheet.create({
     marginBottom: 56,
   },
   sectionTitle: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 34,
+    fontWeight: '900',
     color: '#041F2B',
     marginBottom: 8,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   sectionSubtitle: {
     fontSize: 16,
     color: '#4a5568',
     marginBottom: 32,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   stepsContainer: {
     gap: 16,
@@ -455,14 +481,16 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#041F2B',
     marginBottom: 8,
+    letterSpacing: 0.2,
   },
   stepDescription: {
     fontSize: 15,
     color: '#4a5568',
     lineHeight: 22,
+    fontWeight: '500',
   },
   horizontalScroll: {
     marginHorizontal: 0,
@@ -495,14 +523,16 @@ const styles = StyleSheet.create({
   },
   benefitTitle: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#041F2B',
     marginBottom: 8,
+    letterSpacing: 0.2,
   },
   benefitDescription: {
     fontSize: 15,
     color: '#4a5568',
     lineHeight: 22,
+    fontWeight: '500',
   },
   featuresList: {
     gap: 16,
@@ -535,14 +565,16 @@ const styles = StyleSheet.create({
   },
   featureTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#041F2B',
     marginBottom: 4,
+    letterSpacing: 0.2,
   },
   featureDescription: {
     fontSize: 15,
     color: '#4a5568',
     lineHeight: 22,
+    fontWeight: '500',
   },
   ctaSection: {
     marginTop: 20,
@@ -576,11 +608,12 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   ctaTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: 30,
+    fontWeight: '900',
     color: '#041F2B',
     marginBottom: 12,
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   ctaDescription: {
     fontSize: 16,
@@ -588,6 +621,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 28,
     lineHeight: 24,
+    fontWeight: '500',
   },
   ctaButton: {
     backgroundColor: '#041F2B',
@@ -607,8 +641,9 @@ const styles = StyleSheet.create({
   ctaButtonText: {
     color: '#ffffff',
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     marginRight: 8,
+    letterSpacing: 0.5,
   },
   ctaButtonIcon: {
     marginLeft: 4,
