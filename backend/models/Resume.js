@@ -70,6 +70,19 @@ class Resume {
     await pool.execute('UPDATE resumes SET is_active = TRUE WHERE id = ?', [resume_id]);
     return this.findById(resume_id);
   }
+
+  static async updateAnalysis(id, analysisData) {
+    const { parsed_text, suggested_domains, skills_extracted } = analysisData;
+
+    await pool.execute(
+      `UPDATE resumes 
+       SET parsed_text = ?, suggested_domains = ?, skills_extracted = ?, analyzed_at = NOW() 
+       WHERE id = ?`,
+      [parsed_text, JSON.stringify(suggested_domains), JSON.stringify(skills_extracted), id]
+    );
+
+    return this.findById(id);
+  }
 }
 
 module.exports = Resume;

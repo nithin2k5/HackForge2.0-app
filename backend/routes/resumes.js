@@ -6,6 +6,8 @@ const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
 const Resume = require('../models/Resume');
 const { authenticate } = require('../middleware/auth');
+const { parseResume } = require('../services/resumeParserService');
+const { suggestDomains } = require('../services/domainMatcher');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -74,6 +76,7 @@ router.post('/', authenticate, upload.single('resume'), async (req, res) => {
 
     const fileUrl = `/uploads/resumes/${req.file.filename}`;
     const fileSize = req.file.size;
+    const filePath = path.join(__dirname, '../uploads/resumes', req.file.filename);
 
     const existingActive = await Resume.findAll({ user_id: req.user.id, is_active: true });
     if (existingActive.length > 0) {
@@ -91,7 +94,42 @@ router.post('/', authenticate, upload.single('resume'), async (req, res) => {
       is_active: true
     });
 
-    res.status(201).json({ message: 'Resume uploaded successfully', resume });
+    // Parse resume and analyze in background
+    try {
+      console.log('📄 Analyzing resume:', req.file.originalname);
+      const { parsedText, skills } = await parseResume(filePath);
+      const suggestedDomains = suggestDomains(skills, parsedText, 5);
+
+      // Update resume with analysis results
+      await Resume.updateAnalysis(resume.id, {
+        parsed_text: parsedText,
+        suggested_domains: suggestedDomains,
+        skills_extracted: skills
+      });
+
+      console.log('✅ Resume analysis complete');
+      console.log('   Skills found:', skills.length);
+      console.log('   Top domain:', suggestedDomains[0]?.domain || 'None');
+
+      // Return updated resume with analysis
+      const updatedResume = await Resume.findById(resume.id);
+      res.status(201).json({
+        message: 'Resume uploaded and analyzed successfully',
+        resume: updatedResume,
+        analysis: {
+          skills: skills,
+          suggestedDomains: suggestedDomains
+        }
+      });
+    } catch (analysisError) {
+      console.error('Error analyzing resume:', analysisError);
+      // Still return success for upload, but note analysis failed
+      res.status(201).json({
+        message: 'Resume uploaded successfully, but analysis failed',
+        resume,
+        analysisError: analysisError.message
+      });
+    }
   } catch (error) {
     console.error('Upload resume error:', error);
     if (req.file) {
@@ -100,6 +138,48 @@ router.post('/', authenticate, upload.single('resume'), async (req, res) => {
         fs.unlinkSync(filePath);
       }
     }
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
+router.post('/:id/analyze', authenticate, async (req, res) => {
+  try {
+    const resume = await Resume.findById(req.params.id);
+    if (!resume) {
+      return res.status(404).json({ error: 'Resume not found' });
+    }
+    if (resume.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const filePath = path.join(__dirname, '..', resume.file_url);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Resume file not found on server' });
+    }
+
+    console.log('📄 Re-analyzing resume:', resume.file_name);
+    const { parsedText, skills } = await parseResume(filePath);
+    const suggestedDomains = suggestDomains(skills, parsedText, 5);
+
+    await Resume.updateAnalysis(resume.id, {
+      parsed_text: parsedText,
+      suggested_domains: suggestedDomains,
+      skills_extracted: skills
+    });
+
+    console.log('✅ Resume re-analysis complete');
+
+    const updatedResume = await Resume.findById(resume.id);
+    res.json({
+      message: 'Resume analyzed successfully',
+      resume: updatedResume,
+      analysis: {
+        skills: skills,
+        suggestedDomains: suggestedDomains
+      }
+    });
+  } catch (error) {
+    console.error('Analyze resume error:', error);
     res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });

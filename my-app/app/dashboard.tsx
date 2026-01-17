@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { COLORS } from '@/constants/colors';
-import { jobsApi, savedJobsApi, applicationsApi, interviewsApi } from '@/services/api';
+import { jobsApi, savedJobsApi, applicationsApi, interviewsApi, authApi, resumesApi } from '@/services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 const DRAWER_WIDTH = screenWidth * 0.75;
@@ -21,6 +21,8 @@ export default function DashboardScreen() {
   const [projects, setProjects] = useState<any[]>([]);
   const [stats, setStats] = useState({ applications: 0, interviews: 0, saved: 0 });
   const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [activeResume, setActiveResume] = useState<any>(null);
   const router = useRouter();
   const { signOut } = useAuth();
 
@@ -31,25 +33,33 @@ export default function DashboardScreen() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [jobsRes, savedRes, appsRes, interviewsRes] = await Promise.all([
+      const [jobsRes, savedRes, appsRes, interviewsRes, profileRes, resumesRes] = await Promise.all([
         jobsApi.getAll({}),
         savedJobsApi.getAll(),
         applicationsApi.getAll(),
         interviewsApi.getAll(),
+        authApi.getProfile(),
+        resumesApi.getAll(),
       ]);
+
+      setUserProfile(profileRes);
+
+      const allResumes = Array.isArray(resumesRes) ? resumesRes : [];
+      const active = allResumes.find((r: any) => r.is_active);
+      setActiveResume(active);
 
       const allJobs = Array.isArray(jobsRes) ? jobsRes : (jobsRes.data || jobsRes.jobs || []);
       setJobs(allJobs.slice(0, 4));
       setProjects([]);
-      
-      const savedJobIds = Array.isArray(savedRes) 
+
+      const savedJobIds = Array.isArray(savedRes)
         ? savedRes.map((item: any) => item.job_id || item.id)
         : (savedRes.data || []).map((item: any) => item.job_id || item.id);
       setSavedJobs(savedJobIds);
 
       const applications = Array.isArray(appsRes) ? appsRes : (appsRes.data || []);
       const interviews = Array.isArray(interviewsRes) ? interviewsRes : (interviewsRes.data || []);
-      
+
       setStats({
         applications: applications.length,
         interviews: interviews.filter((i: any) => i.status === 'scheduled').length,
@@ -65,7 +75,7 @@ export default function DashboardScreen() {
   const handleSaveJob = async (jobId: number) => {
     try {
       const isSaved = savedJobs.includes(jobId);
-      
+
       if (isSaved) {
         await savedJobsApi.delete(jobId);
         setSavedJobs(savedJobs.filter(id => id !== jobId));
@@ -203,10 +213,10 @@ export default function DashboardScreen() {
                   <Text style={styles.jobCompany}>{job.company || 'Company'}</Text>
                 </View>
                 <TouchableOpacity onPress={() => handleSaveJob(job.id)}>
-                  <Ionicons 
-                    name={savedJobs.includes(job.id) ? 'bookmark' : 'bookmark-outline'} 
-                    size={24} 
-                    color={savedJobs.includes(job.id) ? COLORS.PRIMARY : COLORS.TEXT_SECONDARY} 
+                  <Ionicons
+                    name={savedJobs.includes(job.id) ? 'bookmark' : 'bookmark-outline'}
+                    size={24}
+                    color={savedJobs.includes(job.id) ? COLORS.PRIMARY : COLORS.TEXT_SECONDARY}
                   />
                 </TouchableOpacity>
               </View>
@@ -306,10 +316,10 @@ export default function DashboardScreen() {
                 <Text style={styles.jobCompany}>{job.company} • {job.location}</Text>
               </View>
               <TouchableOpacity onPress={() => handleSaveJob(job.id)}>
-                <Ionicons 
-                  name={savedJobs.includes(job.id) ? 'bookmark' : 'bookmark-outline'} 
-                  size={24} 
-                  color={savedJobs.includes(job.id) ? COLORS.PRIMARY : COLORS.TEXT_SECONDARY} 
+                <Ionicons
+                  name={savedJobs.includes(job.id) ? 'bookmark' : 'bookmark-outline'}
+                  size={24}
+                  color={savedJobs.includes(job.id) ? COLORS.PRIMARY : COLORS.TEXT_SECONDARY}
                 />
               </TouchableOpacity>
             </View>
@@ -395,31 +405,31 @@ export default function DashboardScreen() {
               </View>
             </View>
             <View style={styles.projectActions}>
-            <Pressable 
-              style={styles.projectActionButton}
-              onPress={() => router.push({
-                pathname: '/(projects)/project-detail' as any,
-                params: {
-                  id: project.id.toString(),
-                  title: project.title || '',
-                  client: project.client || '',
-                  budget: project.budget || '',
-                  duration: project.deadline || '',
-                  skills: 'React,Node.js',
-                  match: '90',
-                  status: project.status?.toLowerCase() || 'active',
-                },
-              })}
-            >
-              <Ionicons name="eye-outline" size={18} color={COLORS.PRIMARY} />
-              <Text style={styles.projectActionText}>View Details</Text>
-            </Pressable>
-            <Pressable style={styles.projectActionButton}>
-              <Ionicons name="chatbubble-outline" size={18} color={COLORS.PRIMARY} />
-              <Text style={styles.projectActionText}>Messages</Text>
-            </Pressable>
+              <Pressable
+                style={styles.projectActionButton}
+                onPress={() => router.push({
+                  pathname: '/(projects)/project-detail' as any,
+                  params: {
+                    id: project.id.toString(),
+                    title: project.title || '',
+                    client: project.client || '',
+                    budget: project.budget || '',
+                    duration: project.deadline || '',
+                    skills: 'React,Node.js',
+                    match: '90',
+                    status: project.status?.toLowerCase() || 'active',
+                  },
+                })}
+              >
+                <Ionicons name="eye-outline" size={18} color={COLORS.PRIMARY} />
+                <Text style={styles.projectActionText}>View Details</Text>
+              </Pressable>
+              <Pressable style={styles.projectActionButton}>
+                <Ionicons name="chatbubble-outline" size={18} color={COLORS.PRIMARY} />
+                <Text style={styles.projectActionText}>Messages</Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
         ))}
       </View>
     </View>
@@ -431,8 +441,8 @@ export default function DashboardScreen() {
         <View style={styles.profileAvatar}>
           <Ionicons name="person" size={48} color={COLORS.PRIMARY} />
         </View>
-        <Text style={styles.profileName}>John Doe</Text>
-        <Text style={styles.profileEmail}>john.doe@example.com</Text>
+        <Text style={styles.profileName}>{userProfile?.name || 'User'}</Text>
+        <Text style={styles.profileEmail}>{userProfile?.email || 'email@example.com'}</Text>
         <TouchableOpacity style={styles.editProfileButton}>
           <Ionicons name="create-outline" size={18} color={COLORS.PRIMARY} />
           <Text style={styles.editProfileText}>Edit Profile</Text>
@@ -446,21 +456,21 @@ export default function DashboardScreen() {
             <Ionicons name="person-outline" size={20} color={COLORS.TEXT_SECONDARY} />
             <View style={styles.profileInfoContent}>
               <Text style={styles.profileInfoLabel}>Full Name</Text>
-              <Text style={styles.profileInfoValue}>John Doe</Text>
+              <Text style={styles.profileInfoValue}>{userProfile?.name || 'N/A'}</Text>
             </View>
           </View>
           <View style={styles.profileInfoRow}>
             <Ionicons name="call-outline" size={20} color={COLORS.TEXT_SECONDARY} />
             <View style={styles.profileInfoContent}>
               <Text style={styles.profileInfoLabel}>Phone</Text>
-              <Text style={styles.profileInfoValue}>+1 234 567 8900</Text>
+              <Text style={styles.profileInfoValue}>{userProfile?.phone || 'N/A'}</Text>
             </View>
           </View>
           <View style={styles.profileInfoRow}>
             <Ionicons name="location-outline" size={20} color={COLORS.TEXT_SECONDARY} />
             <View style={styles.profileInfoContent}>
               <Text style={styles.profileInfoLabel}>Location</Text>
-              <Text style={styles.profileInfoValue}>New York, USA</Text>
+              <Text style={styles.profileInfoValue}>{userProfile?.location || 'N/A'}</Text>
             </View>
           </View>
         </View>
@@ -473,7 +483,7 @@ export default function DashboardScreen() {
             <Ionicons name="briefcase-outline" size={20} color={COLORS.TEXT_SECONDARY} />
             <View style={styles.profileInfoContent}>
               <Text style={styles.profileInfoLabel}>Current Position</Text>
-              <Text style={styles.profileInfoValue}>Senior Developer</Text>
+              <Text style={styles.profileInfoValue}>{userProfile?.title || 'N/A'}</Text>
             </View>
           </View>
           <View style={styles.profileInfoRow}>
@@ -498,8 +508,8 @@ export default function DashboardScreen() {
         <Pressable style={styles.resumeCard}>
           <Ionicons name="document-text" size={32} color={COLORS.PRIMARY} />
           <View style={styles.resumeInfo}>
-            <Text style={styles.resumeName}>resume.pdf</Text>
-            <Text style={styles.resumeSize}>2.4 MB</Text>
+            <Text style={styles.resumeName}>{activeResume?.file_name || 'No resume uploaded'}</Text>
+            <Text style={styles.resumeSize}>{activeResume ? `${(activeResume.file_size / (1024 * 1024)).toFixed(1)} MB` : ''}</Text>
           </View>
           <Ionicons name="download-outline" size={24} color={COLORS.PRIMARY} />
         </Pressable>

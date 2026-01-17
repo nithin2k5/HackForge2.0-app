@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Application = require('../models/Application');
 const { authenticate } = require('../middleware/auth');
+const Resume = require('../models/Resume');
 
 router.get('/', authenticate, async (req, res) => {
   try {
@@ -32,32 +33,60 @@ router.get('/:id', authenticate, async (req, res) => {
 
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { job_id, company_id, status, match_score, resume_url, cover_letter, notes } = req.body;
+    console.log('📝 Application submission request received');
+    console.log('   User ID:', req.user.id);
+    console.log('   Request body:', JSON.stringify(req.body, null, 2));
+
+    let { job_id, company_id, status, match_score, resume_url, cover_letter, notes } = req.body;
 
     if (!job_id || !company_id) {
+      console.error('❌ Missing required fields:', { job_id, company_id });
       return res.status(400).json({ error: 'Job ID and Company ID are required' });
     }
 
+    console.log('   Checking for existing application...');
     const existing = await Application.findByUserAndJob(req.user.id, job_id);
     if (existing) {
-      return res.status(400).json({ error: 'Application already exists' });
+      console.error('❌ Application already exists:', existing.id);
+      return res.status(400).json({ error: 'You have already applied for this job' });
     }
 
+    // If no resume_url provided, try to find the user's active resume
+    if (!resume_url) {
+      console.log('   No resume_url provided, looking up active resume...');
+      const activeResumes = await Resume.findAll({ user_id: req.user.id, is_active: true });
+      if (activeResumes && activeResumes.length > 0) {
+        resume_url = activeResumes[0].file_url;
+        console.log('   Found active resume:', resume_url);
+      } else {
+        console.log('   No active resume found.');
+      }
+    }
+
+    console.log('   Creating new application...');
     const application = await Application.create({
       user_id: req.user.id,
       job_id,
       company_id,
       status,
       match_score,
-      resume_url,
+      resume_url, // URL or null (handled by model)
       cover_letter,
-      notes
+      notes,
+      interview_date: null
     });
 
-    res.status(201).json({ message: 'Application submitted successfully', application });
+    console.log('✅ Application submitted successfully:', application.id);
+    res.status(201).json({
+      message: 'Application submitted successfully',
+      application
+    });
   } catch (error) {
-    console.error('Create application error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Application submission error:', error);
+    res.status(500).json({
+      error: error.message || 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 

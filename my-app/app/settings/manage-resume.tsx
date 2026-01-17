@@ -7,11 +7,14 @@ import {
   Dimensions,
   SafeAreaView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { COLORS } from '@/constants/colors';
+import { resumesApi } from '@/services/api';
+import * as DocumentPicker from 'expo-document-picker';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
@@ -19,36 +22,94 @@ const isSmallScreen = screenWidth < 375;
 export default function ManageResumeScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [resume, setResume] = useState<{ name: string; size: string; uri: string } | null>({
-    name: 'resume.pdf',
-    size: '2.4 MB',
-    uri: '',
-  });
+  const [fetching, setFetching] = useState(true);
+  const [resume, setResume] = useState<{ id: number; name: string; size: string; uri: string } | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handlePickDocument = async () => {
-    setResume({
-      name: 'resume.pdf',
-      size: '2.4 MB',
-      uri: '',
-    });
+  useEffect(() => {
+    loadResumes();
+  }, []);
+
+  const loadResumes = async () => {
+    try {
+      setFetching(true);
+      const resumes = await resumesApi.getAll();
+      const activeResume = Array.isArray(resumes)
+        ? resumes.find((r: any) => r.is_active)
+        : null;
+
+      if (activeResume) {
+        const sizeInMB = activeResume.file_size
+          ? (activeResume.file_size / (1024 * 1024)).toFixed(1) + ' MB'
+          : '0 MB';
+        setResume({
+          id: activeResume.id,
+          name: activeResume.file_name,
+          size: sizeInMB,
+          uri: activeResume.file_url,
+        });
+      }
+    } catch (error: any) {
+      console.error('Error loading resumes:', error);
+    } finally {
+      setFetching(false);
+    }
   };
 
-  const handleRemoveResume = () => {
-    setResume(null);
+  const handlePickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) return;
+
+      const file = result.assets[0];
+      setLoading(true);
+
+      await resumesApi.upload(file.uri, file.name, file.mimeType || 'application/pdf');
+      await loadResumes();
+      Alert.alert('Success', 'Resume uploaded successfully');
+    } catch (error: any) {
+      console.error('Error uploading resume:', error);
+      Alert.alert('Error', error.message || 'Failed to upload resume');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveResume = async () => {
+    if (!resume) return;
+
+    Alert.alert(
+      'Delete Resume',
+      'Are you sure you want to delete this resume?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await resumesApi.delete(resume.id);
+              setResume(null);
+              Alert.alert('Success', 'Resume deleted successfully');
+            } catch (error: any) {
+              console.error('Error deleting resume:', error);
+              Alert.alert('Error', 'Failed to delete resume');
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleSave = () => {
-    if (loading) return;
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    setLoading(true);
-    timeoutRef.current = setTimeout(() => {
-      setLoading(false);
-      router.back();
-      timeoutRef.current = null;
-    }, 1500);
+    router.back();
   };
 
   return (

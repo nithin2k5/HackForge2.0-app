@@ -59,8 +59,17 @@ class Application {
       `INSERT INTO applications (user_id, job_id, company_id, status, match_score,
        resume_url, cover_letter, notes, interview_date)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [user_id, job_id, company_id, status || 'Application Sent', match_score || 0,
-       resume_url, cover_letter, notes, interview_date]
+      [
+        user_id,
+        job_id,
+        company_id,
+        status || 'Application Sent',
+        match_score || 0,
+        resume_url || null,
+        cover_letter || null,
+        notes || null,
+        interview_date || null
+      ]
     );
 
     return this.findById(result.insertId);

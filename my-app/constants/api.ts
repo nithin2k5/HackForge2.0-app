@@ -6,24 +6,24 @@ const getBaseURL = () => {
   if (!isDevelopment) {
     return 'https://api.hackforge.com';
   }
-  
+
   if (typeof window !== 'undefined' && window.location?.hostname) {
-    return `http://${window.location.hostname}:8081`;
+    return `http://${window.location.hostname}:8085`;
   }
-  
+
   if (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL) {
-    return `http://${process.env.EXPO_PUBLIC_API_URL}:8081`;
+    return `http://${process.env.EXPO_PUBLIC_API_URL}:8085`;
   }
-  
+
   if (Platform.OS === 'ios' && __DEV__) {
-    return 'http://localhost:8081';
+    return 'http://localhost:8085';
   }
-  
+
   if (Platform.OS === 'android' && __DEV__) {
-    return 'http://10.0.2.2:8081';
+    return 'http://10.0.2.2:8085';
   }
-  
-  return 'http://192.168.1.100:8081';
+
+  return 'http://192.168.1.100:8085';
 };
 
 export const API_CONFIG = {
@@ -32,9 +32,9 @@ export const API_CONFIG = {
     AUTH: {
       REGISTER: '/api/auth/register',
       LOGIN: '/api/auth/login',
-            VERIFY_EMAIL: '/api/auth/verify-email',
-            VERIFY_OTP: '/api/auth/verify-otp',
-            RESEND_VERIFICATION: '/api/auth/resend-verification',
+      VERIFY_EMAIL: '/api/auth/verify-email',
+      VERIFY_OTP: '/api/auth/verify-otp',
+      RESEND_VERIFICATION: '/api/auth/resend-verification',
       FORGOT_PASSWORD: '/api/auth/forgot-password',
       VERIFY_RESET_OTP: '/api/auth/verify-reset-otp',
       RESET_PASSWORD: '/api/auth/reset-password',

@@ -22,9 +22,12 @@ class User {
     return rows;
   }
 
-  static async findById(id) {
+  static async findById(id, includePassword = false) {
+    const fields = includePassword
+      ? '*'
+      : 'id, name, email, role, phone, location, title, company_id, status, created_at';
     const [rows] = await pool.execute(
-      'SELECT id, name, email, role, phone, location, title, company_id, status, created_at FROM users WHERE id = ?',
+      `SELECT ${fields} FROM users WHERE id = ?`,
       [id]
     );
     return rows[0];
@@ -88,13 +91,13 @@ class User {
       `INSERT INTO users (name, email, password, role, phone, location, title, company_id, status, email_verified) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'inactive', 0)`,
       [
-        name, 
-        email, 
-        hashedPassword, 
-        role || 'user', 
-        phone || null, 
-        location || null, 
-        title || null, 
+        name,
+        email,
+        hashedPassword,
+        role || 'user',
+        phone || null,
+        location || null,
+        title || null,
         company_id || null
       ]
     );
@@ -130,6 +133,14 @@ class User {
 
   static async delete(id) {
     await pool.execute('DELETE FROM users WHERE id = ?', [id]);
+    return true;
+  }
+
+  static async updatePassword(id, hashedPassword) {
+    await pool.execute(
+      'UPDATE users SET password = ? WHERE id = ?',
+      [hashedPassword, id]
+    );
     return true;
   }
 

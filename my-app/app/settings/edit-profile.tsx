@@ -10,11 +10,13 @@ import {
   Platform,
   KeyboardAvoidingView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { COLORS } from '@/constants/colors';
+import { authApi } from '@/services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
@@ -22,32 +24,73 @@ const isSmallScreen = screenWidth < 375;
 export default function EditProfileScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [formData, setFormData] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 234 567 8900',
-    location: 'New York, USA',
-    currentPosition: 'Senior Developer',
-    experience: '5 years',
-    education: 'B.Tech Computer Science',
-    linkedin: 'https://linkedin.com/in/johndoe',
-    portfolio: 'https://johndoe.dev',
-    bio: 'Experienced software developer with a passion for creating innovative solutions.',
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    currentPosition: '',
+    experience: '',
+    education: '',
+    linkedin: '',
+    portfolio: '',
+    bio: '',
   });
 
-  const handleSave = () => {
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      setFetching(true);
+      const profile = await authApi.getProfile();
+      setFormData({
+        name: profile.name || '',
+        email: profile.email || '',
+        phone: profile.phone || '',
+        location: profile.location || '',
+        currentPosition: profile.title || '',
+        experience: '',
+        education: '',
+        linkedin: '',
+        portfolio: '',
+        bio: '',
+      });
+    } catch (error: any) {
+      console.error('Error loading profile:', error);
+      Alert.alert('Error', 'Failed to load profile data');
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  const handleSave = async () => {
     if (loading) return;
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    setLoading(true);
-    timeoutRef.current = setTimeout(() => {
-      setLoading(false);
+
+    try {
+      setLoading(true);
+      await authApi.updateProfile({
+        name: formData.name,
+        phone: formData.phone,
+        location: formData.location,
+        title: formData.currentPosition,
+      });
+
+      Alert.alert('Success', 'Profile updated successfully');
       router.back();
-      timeoutRef.current = null;
-    }, 1500);
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      Alert.alert('Error', error.message || 'Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

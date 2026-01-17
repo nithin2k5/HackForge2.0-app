@@ -10,6 +10,7 @@ const isSmallScreen = screenWidth < 375;
 
 interface Job {
   id: number;
+  company_id: number;
   title?: string;
   company?: string;
   location?: string;
@@ -30,6 +31,7 @@ export default function JobDetailScreen() {
   const [isApplied, setIsApplied] = useState(false);
   const [job, setJob] = useState<Job>({
     id: params.id ? parseInt(Array.isArray(params.id) ? params.id[0] : params.id) : 1,
+    company_id: 1, // Default or placeholder
     title: Array.isArray(params.title) ? params.title[0] : params.title,
     company: Array.isArray(params.company) ? params.company[0] : params.company,
     location: Array.isArray(params.location) ? params.location[0] : params.location,
@@ -53,8 +55,9 @@ export default function JobDetailScreen() {
       const jobData = response.data || response;
       setJob({
         id: jobData.id || jobId,
+        company_id: jobData.company_id || 1,
         title: jobData.title || job.title,
-        company: jobData.company || job.company,
+        company: jobData.company_name || jobData.company || job.company,
         location: jobData.location || job.location,
         salary: jobData.salary || job.salary,
         match: jobData.match || job.match,
@@ -128,6 +131,7 @@ export default function JobDetailScreen() {
         pathname: '/job-application',
         params: {
           jobId: job.id.toString(),
+          companyId: job.company_id.toString(),
           jobTitle: job.title,
           company: job.company,
         },
@@ -178,37 +182,37 @@ export default function JobDetailScreen() {
               </View>
             </View>
 
-          <View style={styles.badgesContainer}>
-            <View style={styles.matchBadge}>
-              <Ionicons name="checkmark-circle" size={18} color="#10b981" />
-              <Text style={styles.matchText}>{job.match}% Match</Text>
-            </View>
-            {isApplied && (
-              <View style={styles.appliedBadge}>
+            <View style={styles.badgesContainer}>
+              <View style={styles.matchBadge}>
                 <Ionicons name="checkmark-circle" size={18} color="#10b981" />
-                <Text style={styles.appliedText}>Applied</Text>
+                <Text style={styles.matchText}>{job.match}% Match</Text>
               </View>
-            )}
-          </View>
+              {isApplied && (
+                <View style={styles.appliedBadge}>
+                  <Ionicons name="checkmark-circle" size={18} color="#10b981" />
+                  <Text style={styles.appliedText}>Applied</Text>
+                </View>
+              )}
+            </View>
 
-          <View style={styles.infoGrid}>
-            <View style={styles.infoItem}>
-              <Ionicons name="location-outline" size={20} color={COLORS.TEXT_SECONDARY} />
-              <Text style={styles.infoText}>{job.location}</Text>
+            <View style={styles.infoGrid}>
+              <View style={styles.infoItem}>
+                <Ionicons name="location-outline" size={20} color={COLORS.TEXT_SECONDARY} />
+                <Text style={styles.infoText}>{job.location}</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="cash-outline" size={20} color={COLORS.TEXT_SECONDARY} />
+                <Text style={styles.infoText}>{job.salary}</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="briefcase-outline" size={20} color={COLORS.TEXT_SECONDARY} />
+                <Text style={styles.infoText}>{job.type}</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="time-outline" size={20} color={COLORS.TEXT_SECONDARY} />
+                <Text style={styles.infoText}>Posted {job.posted}</Text>
+              </View>
             </View>
-            <View style={styles.infoItem}>
-              <Ionicons name="cash-outline" size={20} color={COLORS.TEXT_SECONDARY} />
-              <Text style={styles.infoText}>{job.salary}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Ionicons name="briefcase-outline" size={20} color={COLORS.TEXT_SECONDARY} />
-              <Text style={styles.infoText}>{job.type}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Ionicons name="time-outline" size={20} color={COLORS.TEXT_SECONDARY} />
-              <Text style={styles.infoText}>Posted {job.posted}</Text>
-            </View>
-          </View>
 
             {job.description && (
               <View style={styles.section}>

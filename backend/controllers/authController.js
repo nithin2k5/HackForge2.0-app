@@ -54,7 +54,7 @@ const register = async (req, res) => {
     let emailSent = false;
     let emailError = null;
     let verificationCodeForDev = null;
-    
+
     try {
       await emailService.sendVerificationEmail(email, name, verificationCode);
       console.log('Verification OTP sent successfully');
@@ -80,7 +80,7 @@ const register = async (req, res) => {
       const isDevelopment = process.env.NODE_ENV === 'development';
       res.status(200).json({
         message: 'Please verify your email to complete registration.',
-        warning: emailError === 'Email service not configured' 
+        warning: emailError === 'Email service not configured'
           ? 'Email service is not configured. For development, you can verify manually.'
           : 'Verification email could not be sent. Please use the resend verification feature.',
         emailError: emailError,
@@ -91,7 +91,7 @@ const register = async (req, res) => {
     }
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: error.message || 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
@@ -142,7 +142,7 @@ const login = async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: error.message || 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
@@ -170,6 +170,45 @@ const updateProfile = async (req, res) => {
   }
 };
 
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters long' });
+    }
+
+    // Get user with password
+    const user = await User.findById(req.user.id, true);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verify current password
+    const bcrypt = require('bcryptjs');
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await User.updatePassword(user.id, hashedPassword);
+
+    console.log('✅ Password changed successfully for user:', user.email);
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('❌ Change password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 const verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
@@ -191,7 +230,7 @@ const verifyEmail = async (req, res) => {
     });
   } catch (error) {
     console.error('Email verification error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: error.message || 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
@@ -207,7 +246,7 @@ const verifyOTP = async (req, res) => {
     }
 
     const pendingRegistration = pendingRegistrations.get(email);
-    
+
     if (!pendingRegistration) {
       const existingUser = await User.findByEmail(email);
       if (existingUser) {
@@ -248,9 +287,9 @@ const verifyOTP = async (req, res) => {
     pendingRegistrations.delete(email);
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { userId: user.id, email: user.email },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '30d' }
+      { expiresIn: '7d' }
     );
 
     res.json({
@@ -266,7 +305,7 @@ const verifyOTP = async (req, res) => {
     });
   } catch (error) {
     console.error('OTP verification error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: error.message || 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
@@ -311,19 +350,19 @@ const resendVerificationEmail = async (req, res) => {
       res.json({ message: 'Verification code sent successfully' });
     } catch (emailError) {
       console.error('Error sending verification email:', emailError);
-      
+
       if (emailError.message === 'EMAIL_SERVICE_NOT_CONFIGURED') {
         const isDevelopment = process.env.NODE_ENV === 'development';
-        res.status(503).json({ 
+        res.status(503).json({
           error: 'Email service not configured',
-          message: isDevelopment 
+          message: isDevelopment
             ? `Email service not configured. For development, you can verify manually. Check backend console for OTP code or configure SMTP in backend/.env file. See backend/EMAIL_SETUP.md for instructions.`
             : 'Email service is not configured. Please contact support.',
           verificationCode: isDevelopment ? verificationCode : undefined,
           setupInstructions: isDevelopment ? 'Add SMTP_USER and SMTP_PASS to backend/.env file. See backend/EMAIL_SETUP.md for details.' : undefined
         });
       } else {
-        res.status(500).json({ 
+        res.status(500).json({
           error: 'Failed to send verification email',
           message: emailError.message || 'Email service error. Please check SMTP configuration.'
         });
@@ -331,7 +370,7 @@ const resendVerificationEmail = async (req, res) => {
     }
   } catch (error) {
     console.error('Resend verification email error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: error.message || 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
@@ -347,7 +386,7 @@ const forgotPassword = async (req, res) => {
     }
 
     const user = await User.findByEmail(email);
-    
+
     if (user) {
       const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
       const resetExpires = new Date();
@@ -363,13 +402,13 @@ const forgotPassword = async (req, res) => {
       }
     }
 
-    res.json({ 
+    res.json({
       message: 'If an account with that email exists, a password reset code has been sent.',
       sent: true
     });
   } catch (error) {
     console.error('Forgot password error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: error.message || 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
@@ -397,13 +436,13 @@ const verifyResetOTP = async (req, res) => {
       return res.status(400).json({ error: 'Verification code has expired' });
     }
 
-    res.json({ 
+    res.json({
       message: 'Verification code verified successfully',
       verified: true
     });
   } catch (error) {
     console.error('Verify reset OTP error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: error.message || 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
@@ -444,7 +483,7 @@ const resetPassword = async (req, res) => {
     });
   } catch (error) {
     console.error('Reset password error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: error.message || 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
@@ -456,6 +495,7 @@ module.exports = {
   login,
   getProfile,
   updateProfile,
+  changePassword,
   verifyEmail,
   verifyOTP,
   resendVerificationEmail,

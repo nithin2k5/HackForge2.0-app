@@ -48,7 +48,7 @@ export default function CompaniesScreen() {
       setError(null);
       const filters: any = {};
       if (searchQuery) filters.search = searchQuery;
-      
+
       const response = await companiesApi.getAll(filters);
       setCompanies(Array.isArray(response) ? response : (response.data || response.companies || []));
     } catch (err: any) {
@@ -103,7 +103,7 @@ export default function CompaniesScreen() {
             onChangeText={setSearchQuery}
           />
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.sortButton}
           onPress={() => setShowSortMenu(!showSortMenu)}
         >
@@ -163,109 +163,109 @@ export default function CompaniesScreen() {
             ) : (
               <View style={styles.companiesGrid}>
                 {sortedCompanies.map((company) => (
-            <TouchableOpacity
-              key={company.id}
-              style={styles.companyCard}
-              onPress={() => {
-                router.push({
-                  pathname: '/(companies)/company-detail' as any,
-                  params: {
-                    id: company.id.toString(),
-                    name: company.name,
-                    location: company.location,
-                    employees: company.employees,
-                    website: company.website,
-                    description: company.description,
-                    founded: company.founded,
-                    openPositions: ((company.openPositions || 0)).toString(),
-                    rating: ((company.rating || 0)).toString(),
-                  },
-                });
-              }}
-            >
-              {company.featured && (
-                <View style={styles.featuredBadge}>
-                  <Ionicons name="checkmark-circle" size={14} color={COLORS.TEXT_PRIMARY} />
-                  <Text style={styles.featuredText}>Featured</Text>
-                </View>
-              )}
-              <View style={styles.companyHeader}>
-                <View style={styles.companyInitials}>
-                  <Text style={styles.initialsText}>{getInitials(company.name)}</Text>
-                </View>
-                <View style={styles.companyInfo}>
-                  <Text style={styles.companyName}>{company.name}</Text>
-                  {company.rating && (
-                    <View style={styles.ratingContainer}>
-                      <Ionicons name="star" size={14} color={COLORS.PRIMARY} />
-                      <Text style={styles.ratingText}>{company.rating}</Text>
+                  <TouchableOpacity
+                    key={company.id}
+                    style={styles.companyCard}
+                    onPress={() => {
+                      router.push({
+                        pathname: '/(companies)/company-detail' as any,
+                        params: {
+                          id: company.id.toString(),
+                          name: company.name,
+                          location: company.location,
+                          employees: company.employees,
+                          website: company.website,
+                          description: company.description,
+                          founded: company.founded,
+                          openPositions: ((company.openPositions || 0)).toString(),
+                          rating: ((company.rating || 0)).toString(),
+                        },
+                      });
+                    }}
+                  >
+                    {company.featured && (
+                      <View style={styles.featuredBadge}>
+                        <Ionicons name="checkmark-circle" size={14} color={COLORS.TEXT_PRIMARY} />
+                        <Text style={styles.featuredText}>Featured</Text>
+                      </View>
+                    )}
+                    <View style={styles.companyHeader}>
+                      <View style={styles.companyInitials}>
+                        <Text style={styles.initialsText}>{getInitials(company.name)}</Text>
+                      </View>
+                      <View style={styles.companyInfo}>
+                        <Text style={styles.companyName}>{company.name}</Text>
+                        {company.rating && (
+                          <View style={styles.ratingContainer}>
+                            <Ionicons name="star" size={14} color={COLORS.PRIMARY} />
+                            <Text style={styles.ratingText}>{company.rating}</Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
-                  )}
-                </View>
-              </View>
-              {company.description && (
-                <Text style={styles.companyDescription} numberOfLines={2}>{company.description}</Text>
-              )}
-              <View style={styles.companyDetails}>
-                {company.location && (
-                  <View style={styles.detailRow}>
-                    <Ionicons name="location-outline" size={14} color={COLORS.TEXT_SECONDARY} />
-                    <Text style={styles.detailText}>{company.location}</Text>
-                  </View>
-                )}
-                {company.employees && (
-                  <View style={styles.detailRow}>
-                    <Ionicons name="people-outline" size={14} color={COLORS.TEXT_SECONDARY} />
-                    <Text style={styles.detailText}>{company.employees} employees</Text>
-                  </View>
-                )}
-                {company.founded && (
-                  <View style={styles.detailRow}>
-                    <Ionicons name="calendar-outline" size={14} color={COLORS.TEXT_SECONDARY} />
-                    <Text style={styles.detailText}>Founded {company.founded}</Text>
-                  </View>
-                )}
-              </View>
-              {company.openPositions !== undefined && (
-                <View style={styles.openPositions}>
-                  <Text style={styles.openPositionsText}>{company.openPositions} open positions</Text>
-                </View>
-              )}
-              <View style={styles.buttonRow}>
-                <TouchableOpacity
-                  style={styles.viewJobsButton}
-                  onPress={() => {
-                    router.push({
-                      pathname: '/(jobs)/jobs' as any,
-                      params: { company: company.name },
-                    });
-                  }}
-                >
-                  <Text style={styles.viewJobsText}>View Jobs</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.viewCompanyButton}
-                  onPress={() => {
-                    router.push({
-                      pathname: '/(companies)/company-detail' as any,
-                      params: {
-                        id: company.id.toString(),
-                        name: company.name,
-                        location: company.location,
-                        employees: company.employees,
-                        website: company.website,
-                        description: company.description,
-                        founded: company.founded,
-                        openPositions: (company.openPositions || 0).toString(),
-                        rating: (company.rating || 0).toString(),
-                      },
-                    });
-                  }}
-                >
-                  <Text style={styles.viewCompanyText}>View Company</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
+                    {company.description && (
+                      <Text style={styles.companyDescription} numberOfLines={2}>{company.description}</Text>
+                    )}
+                    <View style={styles.companyDetails}>
+                      {company.location && (
+                        <View style={styles.detailRow}>
+                          <Ionicons name="location-outline" size={14} color={COLORS.TEXT_SECONDARY} />
+                          <Text style={styles.detailText}>{company.location}</Text>
+                        </View>
+                      )}
+                      {company.employees && (
+                        <View style={styles.detailRow}>
+                          <Ionicons name="people-outline" size={14} color={COLORS.TEXT_SECONDARY} />
+                          <Text style={styles.detailText}>{company.employees} employees</Text>
+                        </View>
+                      )}
+                      {company.founded && (
+                        <View style={styles.detailRow}>
+                          <Ionicons name="calendar-outline" size={14} color={COLORS.TEXT_SECONDARY} />
+                          <Text style={styles.detailText}>Founded {company.founded}</Text>
+                        </View>
+                      )}
+                    </View>
+                    {company.openPositions !== undefined && (
+                      <View style={styles.openPositions}>
+                        <Text style={styles.openPositionsText}>{company.openPositions} open positions</Text>
+                      </View>
+                    )}
+                    <View style={styles.buttonRow}>
+                      <TouchableOpacity
+                        style={styles.viewJobsButton}
+                        onPress={() => {
+                          router.push({
+                            pathname: '/(jobs)/jobs' as any,
+                            params: { company: company.name },
+                          });
+                        }}
+                      >
+                        <Text style={styles.viewJobsText}>View Jobs</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.viewCompanyButton}
+                        onPress={() => {
+                          router.push({
+                            pathname: '/(companies)/company-detail' as any,
+                            params: {
+                              id: company.id.toString(),
+                              name: company.name,
+                              location: company.location,
+                              employees: company.employees,
+                              website: company.website,
+                              description: company.description,
+                              founded: company.founded,
+                              openPositions: (company.openPositions || 0).toString(),
+                              rating: (company.rating || 0).toString(),
+                            },
+                          });
+                        }}
+                      >
+                        <Text style={styles.viewCompanyText}>View Company</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
                 ))}
               </View>
             )}

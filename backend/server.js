@@ -15,7 +15,7 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT || 8085;
 
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -47,14 +47,18 @@ app.use('/api/notifications', notificationsRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err.stack);
-  res.status(500).json({ 
+  res.status(500).json({
     error: err.message || 'Something went wrong!',
     details: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Server is running on port ${PORT}`);
+  console.log(`📍 Local: http://localhost:${PORT}`);
+  console.log(`🌐 Network: http://0.0.0.0:${PORT}`);
+  console.log(`📱 For emulator: Use your computer's IP address (e.g., http://192.168.1.12:${PORT})`);
+  console.log(`\n💡 Test the API: node scripts/test-api.js`);
 });
 
 

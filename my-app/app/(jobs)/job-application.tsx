@@ -11,11 +11,13 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator,
   BackHandler,
+  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect, useRef } from 'react';
 import { COLORS } from '@/constants/colors';
+import { applicationsApi } from '@/services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
@@ -103,24 +105,43 @@ export default function JobApplicationScreen() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (loading) return;
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    setLoading(true);
-    timeoutRef.current = setTimeout(() => {
-      setLoading(false);
+
+    try {
+      setLoading(true);
+
+      const notesData = {
+        availability: formData.availability,
+        expected_salary: formData.expectedSalary,
+        notice_period: formData.noticePeriod,
+        additional_info: formData.additionalInfo,
+      };
+
+      await applicationsApi.create({
+        job_id: params.jobId,
+        company_id: params.companyId,
+        cover_letter: formData.coverLetter,
+        notes: JSON.stringify(notesData),
+        portfolio_url: formData.portfolio,
+        linkedin_url: formData.linkedin,
+        // resume_url: // TODO: Get active resume URL if needed, or backend can defaults it
+      });
+
       router.replace({
-        pathname: '/application-success',
+        pathname: '/application-success' as any,
         params: {
-          jobId: params.jobId || '',
+          jobId: params.jobId,
           jobTitle: params.jobTitle || 'Job Position',
           company: params.company || 'Company Name',
         },
       });
-      timeoutRef.current = null;
-    }, 1500);
+    } catch (error: any) {
+      console.error('Error submitting application:', error);
+      Alert.alert('Error', error.message || 'Failed to submit application. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderStepContent = () => {

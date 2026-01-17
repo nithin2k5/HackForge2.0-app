@@ -17,7 +17,7 @@ const apiRequest = async (
   try {
     const token = await getAuthToken();
     const url = `${API_CONFIG.BASE_URL}${endpoint}`;
-    
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string> || {}),
@@ -41,7 +41,7 @@ const apiRequest = async (
         const text = await response.text();
         errorData = text ? JSON.parse(text) : { message: `HTTP ${response.status}: ${response.statusText}` };
       } catch (e) {
-        errorData = { 
+        errorData = {
           message: `HTTP ${response.status}: ${response.statusText}`,
           error: `Server returned status ${response.status}`
         };
@@ -60,11 +60,11 @@ const apiRequest = async (
       status: error.status,
       url: `${API_CONFIG.BASE_URL}${endpoint}`
     });
-    
+
     if (error.message === 'Network request failed' || error.message?.includes('Network') || error.message?.includes('Failed to fetch')) {
-      throw new Error('Cannot connect to server. Please check:\n1. Backend server is running on port 8081\n2. Your device and computer are on the same network\n3. Update EXPO_PUBLIC_API_URL in .env with your computer\'s IP address');
+      throw new Error('Cannot connect to server. Please check:\\n1. Backend server is running on port 8085\\n2. Your device and computer are on the same network\\n3. Update EXPO_PUBLIC_API_URL in .env with your computer\'s IP address');
     }
-    
+
     throw error;
   }
 };
@@ -77,7 +77,7 @@ export const jobsApi = {
     if (filters?.company_id) queryParams.append('company_id', filters.company_id.toString());
     if (filters?.type) queryParams.append('type', filters.type);
     if (filters?.location) queryParams.append('location', filters.location);
-    
+
     const queryString = queryParams.toString();
     const endpoint = queryString ? `${API_CONFIG.ENDPOINTS.JOBS.LIST}?${queryString}` : API_CONFIG.ENDPOINTS.JOBS.LIST;
     return apiRequest(endpoint);
@@ -93,7 +93,7 @@ export const companiesApi = {
     if (filters?.search) queryParams.append('search', filters.search);
     if (filters?.verified !== undefined) queryParams.append('verified', filters.verified.toString());
     if (filters?.featured !== undefined) queryParams.append('featured', filters.featured.toString());
-    
+
     const queryString = queryParams.toString();
     const endpoint = queryString ? `${API_CONFIG.ENDPOINTS.COMPANIES.LIST}?${queryString}` : API_CONFIG.ENDPOINTS.COMPANIES.LIST;
     return apiRequest(endpoint);
@@ -234,6 +234,12 @@ export const authApi = {
       body: JSON.stringify(data),
     });
   },
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    return apiRequest(`${API_CONFIG.BASE_URL}/api/auth/change-password`, {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  },
   logout: async () => {
     await AsyncStorage.removeItem('authToken');
   },
@@ -249,13 +255,13 @@ export const resumesApi = {
   upload: async (fileUri: string, fileName: string, fileType: string) => {
     const token = await getAuthToken();
     const formData = new FormData();
-    
+
     const file: any = {
       uri: fileUri,
       name: fileName,
       type: fileType,
     };
-    
+
     formData.append('resume', file);
 
     const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.RESUMES.UPLOAD}`;

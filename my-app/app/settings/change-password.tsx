@@ -10,11 +10,13 @@ import {
   Platform,
   KeyboardAvoidingView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useRef } from 'react';
 import { COLORS } from '@/constants/colors';
+import { authApi } from '@/services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
@@ -33,30 +35,36 @@ export default function ChangePasswordScreen() {
     confirmPassword: '',
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (loading) return;
 
     if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
+      Alert.alert('Error', 'All fields are required');
       return;
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
+      Alert.alert('Error', 'New passwords do not match');
       return;
     }
 
     if (formData.newPassword.length < 8) {
+      Alert.alert('Error', 'Password must be at least 8 characters long');
       return;
     }
 
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    setLoading(true);
-    timeoutRef.current = setTimeout(() => {
+    try {
+      setLoading(true);
+      await authApi.changePassword(formData.currentPassword, formData.newPassword);
+      Alert.alert('Success', 'Password changed successfully', [
+        { text: 'OK', onPress: () => router.back() }
+      ]);
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      Alert.alert('Error', error.message || 'Failed to change password');
+    } finally {
       setLoading(false);
-      router.back();
-      timeoutRef.current = null;
-    }, 1500);
+    }
   };
 
   return (

@@ -1,8 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect } from 'react';
 import { COLORS } from '@/constants/colors';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -16,24 +14,7 @@ export default function ApplicationSuccessScreen() {
   const company = params.company || 'Company Name';
   const jobId = params.jobId;
 
-  useEffect(() => {
-    const saveAppliedJob = async () => {
-      if (jobId) {
-        try {
-          const appliedJobs = await AsyncStorage.getItem('appliedJobs');
-          const appliedJobsList = appliedJobs ? JSON.parse(appliedJobs) : [];
-          const jobIdNum = parseInt(jobId as string);
-          if (!appliedJobsList.includes(jobIdNum)) {
-            appliedJobsList.push(jobIdNum);
-            await AsyncStorage.setItem('appliedJobs', JSON.stringify(appliedJobsList));
-          }
-        } catch (error) {
-          console.error('Error saving applied job:', error);
-        }
-      }
-    };
-    saveAppliedJob();
-  }, [jobId]);
+
 
   return (
     <SafeAreaView style={styles.container}>
