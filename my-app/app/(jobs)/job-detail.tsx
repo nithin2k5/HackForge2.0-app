@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.INFO,
   },
   applyButtonText: {
-    color: '#ffffff',
+    color: COLORS.WHITE,
     fontSize: isSmallScreen ? 16 : 18,
     fontWeight: '800',
     marginRight: 8,

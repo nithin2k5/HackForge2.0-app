@@ -137,7 +137,8 @@ const login = async (req, res) => {
         location: user.location,
         title: user.title,
         company_id: user.company_id,
-        email_verified: user.email_verified
+        email_verified: user.email_verified,
+        status: user.status
       }
     });
   } catch (error) {
@@ -300,7 +301,8 @@ const verifyOTP = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        email_verified: true
+        email_verified: true,
+        status: user.status
       }
     });
   } catch (error) {

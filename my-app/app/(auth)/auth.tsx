@@ -1,6 +1,30 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions, ScrollView, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Pressable,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Dimensions,
+  ScrollView,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  FadeIn,
+  Layout,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  interpolate,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
@@ -20,11 +44,20 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
   const router = useRouter();
-  const scrollViewRef = useRef<ScrollView>(null);
   const nameInputRef = useRef<TextInput>(null);
   const emailInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
   const inputLayouts = useRef<{ [key: string]: number }>({});
+
+  const tabOffset = useSharedValue(0);
+
+  useEffect(() => {
+    tabOffset.value = withSpring(isLogin ? 0 : 1, { damping: 20 });
+  }, [isLogin]);
+
+  const animatedTabStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: interpolate(tabOffset.value, [0, 1], [0, (screenWidth - (24 * 2) - (20 * 2) - 8) / 2]) }],
+  }));
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -90,509 +123,419 @@ export default function AuthScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-      >
-        <ScrollView
-          ref={scrollViewRef}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          keyboardDismissMode="on-drag"
+    <View style={styles.mainContainer}>
+      {/* Dynamic Background Elements */}
+      <View style={styles.backgroundContainer}>
+        <View style={styles.bgCircle1} />
+        <View style={styles.bgCircle2} />
+        <View style={styles.bgCircle3} />
+      </View>
+
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
-          <View style={styles.content}>
-            <View style={[styles.header, isSmallScreen && styles.headerSmall]}>
-              <View style={[styles.logoContainer, isSmallScreen && styles.logoContainerSmall]}>
-                <Ionicons name="briefcase" size={isSmallScreen ? 24 : 28} color={COLORS.PRIMARY} />
+          <View style={styles.formWrapper}>
+            <Animated.View entering={FadeInDown.delay(200).duration(800)} style={styles.header}>
+              <View style={styles.logoWrapper}>
+                <View style={styles.logoContainer}>
+                  <Ionicons name="briefcase" size={28} color={COLORS.WHITE} />
+                </View>
+                <View style={styles.logoGlow} />
               </View>
-              <Text style={[styles.logoText, isSmallScreen && styles.logoTextSmall]}>GROEI</Text>
-            </View>
+              <Text style={styles.logoText}>GROEI</Text>
+            </Animated.View>
 
-            <View style={[styles.authContainer, isSmallScreen && styles.authContainerSmall]}>
-              <View style={styles.toggleContainer}>
+            <Animated.View
+              entering={FadeInUp.delay(400).duration(800)}
+              layout={Layout.springify()}
+              style={styles.authCard}
+            >
+              <View style={styles.toggleWrapper}>
+                <Animated.View style={[styles.activeTabIndicator, animatedTabStyle]} />
                 <Pressable
-                  style={[styles.toggleButton, isLogin && styles.toggleButtonActive]}
+                  style={styles.toggleBtn}
                   onPress={() => setIsLogin(true)}
-                  disabled={loading}
                 >
-                  <Text style={[styles.toggleText, isLogin && styles.toggleTextActive, isSmallScreen && styles.toggleTextSmall]}>
-                    LOGIN
-                  </Text>
+                  <Text style={[styles.toggleBtnText, isLogin && styles.toggleBtnTextActive]}>LOGIN</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.toggleButton, !isLogin && styles.toggleButtonActive]}
+                  style={styles.toggleBtn}
                   onPress={() => setIsLogin(false)}
-                  disabled={loading}
                 >
-                  <Text style={[styles.toggleText, !isLogin && styles.toggleTextActive, isSmallScreen && styles.toggleTextSmall]}>
-                    SIGN UP
-                  </Text>
+                  <Text style={[styles.toggleBtnText, !isLogin && styles.toggleBtnTextActive]}>SIGN UP</Text>
                 </Pressable>
               </View>
 
-              <View style={styles.formContainer}>
-                <Text style={[styles.title, isSmallScreen && styles.titleSmall]}>
-                  {isLogin ? 'WELCOME BACK' : 'CREATE ACCOUNT'}
-                </Text>
-                <Text style={[styles.subtitle, isSmallScreen && styles.subtitleSmall]}>
-                  {isLogin
-                    ? 'Sign in to continue to your account'
-                    : 'Join thousands of professionals using GROEI'}
+              <View style={styles.formContent}>
+                <Text style={styles.formTitle}>
+                  {isLogin ? 'Welcome Back' : 'Get Started'}
                 </Text>
 
-                {!isLogin && (
-                  <View
-                    style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}
-                    onLayout={(e) => {
-                      inputLayouts.current['name'] = e.nativeEvent.layout.y;
-                    }}
-                  >
-                    <Ionicons name="person-outline" size={isSmallScreen ? 18 : 20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
+                <View style={styles.inputsWrapper}>
+                  {!isLogin && (
+                    <Animated.View entering={FadeIn.duration(400)} style={styles.inputBox}>
+                      <Ionicons name="person-outline" size={18} color={COLORS.PRIMARY} style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.textInput}
+                        placeholder="Full Name"
+                        placeholderTextColor={COLORS.TEXT_SECONDARY + '80'}
+                        value={name}
+                        onChangeText={setName}
+                        autoCapitalize="words"
+                        editable={!loading}
+                      />
+                    </Animated.View>
+                  )}
+
+                  <View style={styles.inputBox}>
+                    <Ionicons name="mail-outline" size={18} color={COLORS.PRIMARY} style={styles.inputIcon} />
                     <TextInput
-                      ref={nameInputRef}
-                      style={[styles.input, isSmallScreen && styles.inputSmall]}
-                      placeholder="Full Name"
-                      placeholderTextColor="#a0aec0"
-                      value={name}
-                      onChangeText={setName}
-                      autoCapitalize="words"
+                      style={styles.textInput}
+                      placeholder="Email Address"
+                      placeholderTextColor={COLORS.TEXT_SECONDARY + '80'}
+                      value={email}
+                      onChangeText={setEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
                       editable={!loading}
-                      onFocus={() => {
-                        setTimeout(() => {
-                          const y = inputLayouts.current['name'];
-                          if (y !== undefined && scrollViewRef.current) {
-                            scrollViewRef.current.scrollTo({ y: Math.max(0, y - 150), animated: true });
-                          }
-                        }, 100);
-                      }}
                     />
                   </View>
-                )}
 
-                <View
-                  style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}
-                  onLayout={(e) => {
-                    inputLayouts.current['email'] = e.nativeEvent.layout.y;
-                  }}
-                >
-                  <Ionicons name="mail-outline" size={isSmallScreen ? 18 : 20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    ref={emailInputRef}
-                    style={[styles.input, isSmallScreen && styles.inputSmall]}
-                    placeholder="Email Address"
-                    placeholderTextColor="#a0aec0"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    editable={!loading}
-                    onFocus={() => {
-                      setTimeout(() => {
-                        const y = inputLayouts.current['email'];
-                        if (y !== undefined && scrollViewRef.current) {
-                          scrollViewRef.current.scrollTo({ y: Math.max(0, y - 150), animated: true });
-                        }
-                      }, 100);
-                    }}
-                  />
-                </View>
-
-                <View
-                  style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}
-                  onLayout={(e) => {
-                    inputLayouts.current['password'] = e.nativeEvent.layout.y;
-                  }}
-                >
-                  <Ionicons name="lock-closed-outline" size={isSmallScreen ? 18 : 20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    ref={passwordInputRef}
-                    style={[styles.input, isSmallScreen && styles.inputSmall]}
-                    placeholder="Password"
-                    placeholderTextColor="#a0aec0"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    editable={!loading}
-                    onFocus={() => {
-                      setTimeout(() => {
-                        const y = inputLayouts.current['password'];
-                        if (y !== undefined && scrollViewRef.current) {
-                          scrollViewRef.current.scrollTo({ y: Math.max(0, y - 150), animated: true });
-                        }
-                      }, 100);
-                    }}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeIcon}
-                    disabled={loading}
-                  >
-                    <Ionicons
-                      name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                      size={isSmallScreen ? 18 : 20}
-                      color={COLORS.TEXT_SECONDARY}
+                  <View style={styles.inputBox}>
+                    <Ionicons name="lock-closed-outline" size={18} color={COLORS.PRIMARY} style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Password"
+                      placeholderTextColor={COLORS.TEXT_SECONDARY + '80'}
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      editable={!loading}
                     />
-                  </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+                      <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={18} color={COLORS.TEXT_SECONDARY} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {isLogin && (
                   <TouchableOpacity
-                    style={styles.forgotPassword}
-                    disabled={loading}
+                    style={styles.forgotPass}
                     onPress={() => router.push('/(auth)/forgot-password')}
                   >
-                    <Text style={[styles.forgotPasswordText, isSmallScreen && styles.forgotPasswordTextSmall]}>FORGOT PASSWORD?</Text>
+                    <Text style={styles.forgotPassText}>Forgot Password?</Text>
                   </TouchableOpacity>
                 )}
 
-                <Pressable
-                  style={[styles.submitButton, loading && styles.submitButtonDisabled, isSmallScreen && styles.submitButtonSmall]}
+                <TouchableOpacity
+                  style={[styles.mainBtn, loading && styles.mainBtnDisabled]}
                   onPress={handleSubmit}
                   disabled={loading}
                 >
                   {loading ? (
-                    <ActivityIndicator color={COLORS.TEXT_PRIMARY} size="small" />
+                    <ActivityIndicator color={COLORS.WHITE} />
                   ) : (
                     <>
-                      <Text style={[styles.submitButtonText, isSmallScreen && styles.submitButtonTextSmall]}>
-                        {isLogin ? 'LOGIN' : 'CREATE ACCOUNT'}
-                      </Text>
-                      <Ionicons name="arrow-forward" size={isSmallScreen ? 18 : 20} color="#ffffff" />
+                      <Text style={styles.mainBtnText}>{isLogin ? 'SIGN IN' : 'CREATE ACCOUNT'}</Text>
+                      <Ionicons name="arrow-forward" size={18} color={COLORS.WHITE} />
                     </>
                   )}
-                </Pressable>
+                </TouchableOpacity>
 
-                <View style={styles.divider}>
-                  <View style={styles.dividerLine} />
-                  <Text style={[styles.dividerText, isSmallScreen && styles.dividerTextSmall]}>OR</Text>
-                  <View style={styles.dividerLine} />
+                <View style={styles.orDivider}>
+                  <View style={styles.divLine} />
+                  <Text style={styles.orText}>OR</Text>
+                  <View style={styles.divLine} />
                 </View>
 
-                <View style={styles.socialContainer}>
-                  <Pressable style={[styles.socialButton, loading && styles.socialButtonDisabled, isSmallScreen && styles.socialButtonSmall]} disabled={loading}>
-                    <Ionicons name="logo-google" size={isSmallScreen ? 20 : 24} color={COLORS.PRIMARY} />
-                    <Text style={[styles.socialButtonText, isSmallScreen && styles.socialButtonTextSmall]}>CONTINUE WITH GOOGLE</Text>
-                  </Pressable>
-                </View>
-
-                <View style={styles.footer}>
-                  <Text style={[styles.footerText, isSmallScreen && styles.footerTextSmall]}>
-                    {isLogin ? "DON'T HAVE AN ACCOUNT? " : 'ALREADY HAVE AN ACCOUNT? '}
-                  </Text>
-                  <TouchableOpacity onPress={() => setIsLogin(!isLogin)} disabled={loading}>
-                    <Text style={[styles.footerLink, isSmallScreen && styles.footerLinkSmall]}>
-                      {isLogin ? 'SIGN UP' : 'LOGIN'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity style={styles.googleBtn}>
+                  <Ionicons name="logo-google" size={18} color={COLORS.PRIMARY} />
+                  <Text style={styles.googleBtnText}>Continue with Google</Text>
+                </TouchableOpacity>
               </View>
+            </Animated.View>
+
+            <View style={styles.authFooter}>
+              <Text style={styles.footerInfo}>
+                {isLogin ? "Don't have an account? " : "Already have an account? "}
+              </Text>
+              <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
+                <Text style={styles.footerAction}>
+                  {isLogin ? 'Sign Up' : 'Log In'}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  mainContainer: {
     flex: 1,
     backgroundColor: COLORS.BACKGROUND,
+  },
+  backgroundContainer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+    zIndex: -1,
+  },
+  bgCircle1: {
+    position: 'absolute',
+    width: screenWidth * 1.2,
+    height: screenWidth * 1.2,
+    borderRadius: screenWidth * 0.6,
+    backgroundColor: COLORS.PRIMARY + '10',
+    top: -screenWidth * 0.4,
+    right: -screenWidth * 0.3,
+  },
+  bgCircle2: {
+    position: 'absolute',
+    width: screenWidth,
+    height: screenWidth,
+    borderRadius: screenWidth * 0.5,
+    backgroundColor: COLORS.SECONDARY + '20',
+    bottom: -screenWidth * 0.2,
+    left: -screenWidth * 0.4,
+  },
+  bgCircle3: {
+    position: 'absolute',
+    width: screenWidth * 0.8,
+    height: screenWidth * 0.8,
+    borderRadius: screenWidth * 0.4,
+    backgroundColor: COLORS.PRIMARY + '05',
+    top: screenHeight * 0.3,
+    left: screenWidth * 0.1,
+  },
+  safeArea: {
+    flex: 1,
   },
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
   },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 40,
-  },
-  content: {
+  formWrapper: {
     flex: 1,
-    justifyContent: 'center',
-    paddingVertical: 20,
+    paddingHorizontal: 24,
+    paddingBottom: 20,
+    justifyContent: 'space-between',
   },
   header: {
-    paddingTop: 20,
-    paddingBottom: 16,
-    paddingHorizontal: 24,
     alignItems: 'center',
+    marginTop: screenHeight * 0.04,
+    marginBottom: 20,
   },
-  headerSmall: {
-    paddingTop: 16,
-    paddingBottom: 12,
-    paddingHorizontal: 20,
+  logoWrapper: {
+    position: 'relative',
+    marginBottom: 10,
   },
   logoContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.SECONDARY,
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    backgroundColor: COLORS.PRIMARY,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    zIndex: 2,
+    shadowColor: COLORS.PRIMARY,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  logoContainerSmall: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginBottom: 10,
+  logoGlow: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    right: 3,
+    bottom: 3,
+    borderRadius: 18,
+    backgroundColor: COLORS.PRIMARY,
+    opacity: 0.4,
+    transform: [{ scale: 1.15 }],
+    zIndex: 1,
   },
   logoText: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '900',
     color: COLORS.PRIMARY,
-    letterSpacing: 2,
+    letterSpacing: 3,
+    includeFontPadding: false,
   },
-  logoTextSmall: {
-    fontSize: 24,
-    letterSpacing: 1.5,
+  authCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderRadius: 28,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    shadowColor: COLORS.PRIMARY,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 8,
   },
-  authContainer: {
-    flex: 1,
-    paddingHorizontal: isSmallScreen ? 16 : 24,
-    justifyContent: 'center',
-  },
-  authContainerSmall: {
-    paddingHorizontal: 16,
-  },
-  toggleContainer: {
+  toggleWrapper: {
     flexDirection: 'row',
-    backgroundColor: COLORS.SECONDARY,
-    borderRadius: 12,
+    backgroundColor: COLORS.BACKGROUND,
+    borderRadius: 14,
     padding: 4,
-    marginBottom: 24,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: COLORS.CARD_BORDER,
+    position: 'relative',
+    height: 48,
   },
-  toggleButton: {
+  activeTabIndicator: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    bottom: 4,
+    width: '49%', // Slightly less than half to account for padding
+    backgroundColor: COLORS.WHITE,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  toggleBtn: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
+    justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 2,
   },
-  toggleButtonActive: {
-    backgroundColor: COLORS.PRIMARY,
-  },
-  toggleText: {
+  toggleBtnText: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.TEXT_SECONDARY,
-    letterSpacing: 1,
-  },
-  toggleTextSmall: {
-    fontSize: 12,
+    color: '#94A3B8', // A neutral grey
     letterSpacing: 0.5,
   },
-  toggleTextActive: {
-    color: COLORS.TEXT_PRIMARY,
+  toggleBtnTextActive: {
+    color: COLORS.PRIMARY,
   },
-  formContainer: {
+  formContent: {
     width: '100%',
   },
-  title: {
-    fontSize: 28,
+  formTitle: {
+    fontSize: 22,
     fontWeight: '900',
-    color: COLORS.PRIMARY,
-    marginBottom: 6,
-    letterSpacing: 1,
-    textAlign: 'center',
-  },
-  titleSmall: {
-    fontSize: 24,
-    marginBottom: 4,
-    letterSpacing: 0.5,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: COLORS.TEXT_SECONDARY,
-    marginBottom: 24,
-    textAlign: 'center',
-    fontWeight: '500',
-    lineHeight: 20,
-    paddingHorizontal: 8,
-  },
-  subtitleSmall: {
-    fontSize: 13,
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 20,
-    lineHeight: 18,
-    paddingHorizontal: 4,
+    textAlign: 'center',
   },
-  inputContainer: {
+  inputsWrapper: {
+    gap: 12,
+    marginBottom: 12,
+  },
+  inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.BORDER,
-    marginBottom: 12,
-    paddingLeft: 16,
-    paddingRight: 16,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: 14,
+    paddingHorizontal: 12,
     height: 52,
-    minHeight: 52,
-    width: '100%',
-  },
-  inputContainerSmall: {
-    height: 48,
-    minHeight: 48,
-    paddingLeft: 14,
-    paddingRight: 14,
-    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: COLORS.CARD_BORDER,
   },
   inputIcon: {
-    marginRight: 12,
-    flexShrink: 0,
+    marginRight: 10,
   },
-  input: {
+  textInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     color: COLORS.TEXT_PRIMARY,
     fontWeight: '500',
-    padding: 0,
-    margin: 0,
-    paddingLeft: 0,
-    paddingRight: 0,
-    includeFontPadding: false,
-    textAlignVertical: 'center',
   },
-  inputSmall: {
-    fontSize: 14,
+  eyeBtn: {
+    padding: 6,
   },
-  eyeIcon: {
-    padding: 4,
-  },
-  forgotPassword: {
+  forgotPass: {
     alignSelf: 'flex-end',
     marginBottom: 20,
   },
-  forgotPasswordText: {
+  forgotPassText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: COLORS.PRIMARY,
-    letterSpacing: 0.5,
   },
-  forgotPasswordTextSmall: {
-    fontSize: 12,
-    letterSpacing: 0.3,
-  },
-  submitButton: {
+  mainBtn: {
     backgroundColor: COLORS.PRIMARY,
-    paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 16,
+    height: 54,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
     shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-    minHeight: 52,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 5,
   },
-  submitButtonSmall: {
-    paddingVertical: 14,
-    minHeight: 48,
-    marginBottom: 16,
+  mainBtnDisabled: {
+    opacity: 0.7,
   },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    color: '#ffffff',
-    fontSize: 17,
+  mainBtnText: {
+    color: COLORS.WHITE,
+    fontSize: 15,
     fontWeight: '800',
     marginRight: 8,
-    letterSpacing: 1,
-  },
-  submitButtonTextSmall: {
-    fontSize: 15,
-    marginRight: 6,
     letterSpacing: 0.5,
   },
-  divider: {
+  orDivider: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
   },
-  dividerLine: {
+  divLine: {
     flex: 1,
     height: 1,
-    borderColor: COLORS.BORDER,
+    backgroundColor: COLORS.CARD_BORDER,
   },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#718096',
-    letterSpacing: 1,
-  },
-  dividerTextSmall: {
-    fontSize: 11,
+  orText: {
     marginHorizontal: 12,
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.TEXT_SECONDARY,
     letterSpacing: 0.5,
   },
-  socialContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
-  },
-  socialButton: {
-    width: '100%',
+  googleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: 16,
+    height: 50,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
-    borderRadius: 12,
-    paddingVertical: 12,
-    gap: 8,
-    minHeight: 48,
+    borderColor: COLORS.CARD_BORDER,
+    gap: 10,
   },
-  socialButtonSmall: {
-    paddingVertical: 10,
-    gap: 6,
-    minHeight: 44,
-  },
-  socialButtonDisabled: {
-    opacity: 0.5,
-  },
-  socialButtonText: {
+  googleBtnText: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.PRIMARY,
-    letterSpacing: 0.5,
+    color: COLORS.TEXT_PRIMARY,
   },
-  socialButtonTextSmall: {
-    fontSize: 12,
-    letterSpacing: 0.3,
-  },
-  footer: {
+  authFooter: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    paddingHorizontal: 8,
+    paddingVertical: 10,
   },
-  footerText: {
+  footerInfo: {
     fontSize: 13,
     color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
-  footerTextSmall: {
-    fontSize: 12,
-  },
-  footerLink: {
+  footerAction: {
     fontSize: 13,
-    fontWeight: '800',
     color: COLORS.PRIMARY,
-    letterSpacing: 0.5,
-  },
-  footerLinkSmall: {
-    fontSize: 12,
-    letterSpacing: 0.3,
+    fontWeight: '800',
   },
 });

@@ -33,7 +33,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadsDir));
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', message: 'HackForge API is running' });
+  res.json({ status: 'OK', message: 'Groei API is running' });
 });
 
 app.use('/api/auth', authRoutes);

@@ -1,11 +1,23 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView, TextInput, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  SafeAreaView,
+  TextInput,
+  ActivityIndicator,
+  StatusBar,
+} from 'react-native';
+import Animated, { FadeInDown, FadeInUp, Layout, FadeIn } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/colors';
 import { jobsApi, savedJobsApi } from '@/services/api';
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
 
 interface SuggestedJob {
@@ -53,7 +65,6 @@ export default function SuggestionsScreen() {
       const jobs = Array.isArray(response) ? response : (response.data || response.suggestions || []);
       setSuggestedJobs(jobs);
     } catch (err: any) {
-      console.error('Error loading suggestions:', err);
       setError(err.message || 'Failed to load suggestions');
       setSuggestedJobs([]);
     } finally {
@@ -76,7 +87,6 @@ export default function SuggestionsScreen() {
   const handleSaveJob = async (jobId: number) => {
     try {
       const isSaved = savedJobs.includes(jobId);
-
       if (isSaved) {
         await savedJobsApi.delete(jobId);
         setSavedJobs(savedJobs.filter(id => id !== jobId));
@@ -94,249 +104,245 @@ export default function SuggestionsScreen() {
     if (lowerTitle.includes('react') || lowerTitle.includes('frontend')) return 'code';
     if (lowerTitle.includes('backend') || lowerTitle.includes('server')) return 'server';
     if (lowerTitle.includes('design') || lowerTitle.includes('ui/ux')) return 'color-palette';
-    if (lowerTitle.includes('full stack') || lowerTitle.includes('fullstack')) return 'layers';
-    if (lowerTitle.includes('mobile') || lowerTitle.includes('native')) return 'phone-portrait';
-    if (lowerTitle.includes('javascript')) return 'logo-javascript';
+    if (lowerTitle.includes('full stack')) return 'layers';
+    if (lowerTitle.includes('mobile')) return 'phone-portrait';
     return 'briefcase';
   };
 
-  const filteredJobs = suggestedJobs.filter(job =>
-    job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    job.location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.TEXT_PRIMARY} />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <View style={styles.headerIcon}>
-            <Ionicons name="sparkles" size={24} color={COLORS.PRIMARY} />
-          </View>
-          <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>AI Suggestions</Text>
-            <Text style={styles.headerSubtitle}>Based on your resume</Text>
-          </View>
-        </View>
-        <View style={styles.headerSpacer} />
+    <View style={styles.mainContainer}>
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.backgroundContainer}>
+        <View style={styles.bgCircle1} />
+        <View style={styles.bgCircle2} />
       </View>
 
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Ionicons name="search" size={20} color={COLORS.TEXT_SECONDARY} style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search suggestions..."
-            placeholderTextColor={COLORS.TEXT_SECONDARY}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
+      <SafeAreaView style={styles.safeArea}>
+        <Animated.View entering={FadeInDown.duration(600)} style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.PRIMARY} />
+          </TouchableOpacity>
+          <View style={styles.headerTitleWrapper}>
+            <Text style={styles.headerTitle}>AI Recommendations</Text>
+            <View style={styles.aiBadge}>
+              <Ionicons name="sparkles" size={10} color={COLORS.WHITE} />
+              <Text style={styles.aiBadgeText}>SMART</Text>
+            </View>
+          </View>
+          <View style={{ width: 44 }} />
+        </Animated.View>
+
+        <View style={styles.searchSection}>
+          <View style={styles.searchWrapper}>
+            <Ionicons name="search" size={20} color={COLORS.PRIMARY} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Filter by skill or company..."
+              placeholderTextColor={COLORS.TEXT_SECONDARY + '80'}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
         </View>
-      </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.infoCard}>
-          <View style={styles.infoIcon}>
-            <Ionicons name="bulb" size={24} color={COLORS.PRIMARY} />
-          </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoTitle}>Personalized Job Recommendations</Text>
-            <Text style={styles.infoText}>
-              These jobs are matched to your resume using AI. The higher the match percentage, the better the fit for your skills and experience.
-            </Text>
-          </View>
-        </View>
-
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.PRIMARY} />
-            <Text style={styles.loadingText}>Loading suggestions...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Ionicons name="alert-circle-outline" size={48} color={COLORS.ERROR} />
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={loadSuggestions}>
-              <Text style={styles.retryButtonText}>Retry</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <>
-            <Text style={styles.resultsText}>{filteredJobs.length} job suggestions</Text>
-
-            {filteredJobs.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="search-outline" size={64} color={COLORS.TEXT_SECONDARY} />
-                <Text style={styles.emptyTitle}>No Suggestions Found</Text>
-                <Text style={styles.emptyText}>Try adjusting your search</Text>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+            </View>
+          ) : suggestedJobs.length === 0 ? (
+            <View style={styles.emptyState}>
+              <View style={styles.emptyIconCircle}>
+                <Ionicons name="sparkles-outline" size={60} color={COLORS.PRIMARY + '30'} />
               </View>
-            ) : (
-              filteredJobs.map((job) => (
-                <TouchableOpacity
+              <Text style={styles.emptyTitle}>No personalized jobs yet</Text>
+              <Text style={styles.emptyText}>Upload your resume and complete your profile to get AI-powered recommendations.</Text>
+            </Animated.View>
+          ) : (
+            <View>
+              <Text style={styles.resultsLabel}>{suggestedJobs.length} matches found for you</Text>
+              {suggestedJobs.map((job, index) => (
+                <Animated.View
                   key={job.id}
-                  style={styles.jobCard}
-                  onPress={() => {
-                    router.push({
-                      pathname: '/(jobs)/job-detail' as any,
-                      params: {
-                        id: job.id.toString(),
-                        title: job.title,
-                        company: job.company,
-                        location: job.location,
-                        salary: job.salary || '',
-                        match: job.match?.toString() || '0',
-                        type: job.type || '',
-                        posted: job.posted || '',
-                        icon: job.icon || getJobIcon(job.title),
-                      },
-                    });
-                  }}
+                  entering={FadeInDown.delay(index * 100).duration(600)}
+                  layout={Layout.springify()}
                 >
-                  <View style={styles.cardTop}>
-                    <View style={styles.jobHeader}>
-                      <View style={styles.jobIconContainer}>
+                  <TouchableOpacity
+                    style={styles.jobCard}
+                    onPress={() => {
+                      router.push({
+                        pathname: '/(jobs)/job-detail' as any,
+                        params: {
+                          id: job.id.toString(),
+                          match: job.match?.toString() || '0',
+                        },
+                      });
+                    }}
+                  >
+                    <View style={styles.cardHeader}>
+                      <View style={styles.iconBox}>
                         <Ionicons name={getJobIcon(job.title) as any} size={24} color={COLORS.PRIMARY} />
                       </View>
-                      <View style={styles.jobInfo}>
-                        <Text style={styles.jobTitle}>{job.title}</Text>
-                        <Text style={styles.jobCompany}>{job.company} • {job.location}</Text>
+                      <View style={styles.titleInfo}>
+                        <Text style={styles.jobTitle} numberOfLines={1}>{job.title}</Text>
+                        <Text style={styles.companyName}>{job.company} • {job.location}</Text>
                       </View>
                       <TouchableOpacity
+                        style={styles.saveBtn}
                         onPress={(e) => {
                           e.stopPropagation();
                           handleSaveJob(job.id);
                         }}
-                        style={styles.bookmarkButton}
                       >
                         <Ionicons
-                          name={savedJobs.includes(job.id) ? 'bookmark' : 'bookmark-outline'}
-                          size={24}
-                          color={savedJobs.includes(job.id) ? COLORS.PRIMARY : COLORS.TEXT_SECONDARY}
+                          name={savedJobs.includes(job.id) ? "bookmark" : "bookmark-outline"}
+                          size={22}
+                          color={COLORS.PRIMARY}
                         />
                       </TouchableOpacity>
                     </View>
 
-                    <View style={styles.matchContainer}>
-                      <View style={styles.matchBadge}>
-                        <Ionicons name="sparkles" size={16} color={COLORS.PRIMARY} />
-                        <Text style={styles.matchText}>{job.match}% Match</Text>
+                    <View style={styles.matchBarContainer}>
+                      <View style={styles.matchBarHeader}>
+                        <Text style={styles.matchPercent}>{job.match}% Match Score</Text>
+                        <Text style={styles.matchSource}>AI Analysis</Text>
+                      </View>
+                      <View style={styles.progressBarBg}>
+                        <View style={[styles.progressBarFill, { width: `${job.match}%` }]} />
                       </View>
                     </View>
-                  </View>
 
-                  {job.reason && (
-                    <View style={styles.reasonBox}>
-                      <View style={styles.reasonHeader}>
-                        <Ionicons name="checkmark-circle" size={16} color={COLORS.SUCCESS} />
-                        <Text style={styles.reasonText}>{job.reason}</Text>
-                      </View>
-                      {job.skills && job.skills.length > 0 && (
-                        <View style={styles.skillsContainer}>
-                          {job.skills.map((skill, index) => (
-                            <View key={index} style={styles.skillTag}>
-                              <Text style={styles.skillText}>{skill}</Text>
-                            </View>
-                          ))}
+                    <View style={styles.tagWrapper}>
+                      {job.skills?.slice(0, 3).map((skill, i) => (
+                        <View key={i} style={styles.skillTag}>
+                          <Text style={styles.skillTagText}>{skill}</Text>
                         </View>
-                      )}
+                      ))}
                     </View>
-                  )}
 
-                  <View style={styles.jobDetails}>
-                    <View style={styles.detailItem}>
-                      <Ionicons name="cash-outline" size={14} color={COLORS.TEXT_SECONDARY} />
-                      <Text style={styles.detailText}>{job.salary}</Text>
+                    <View style={styles.cardFooter}>
+                      <View style={styles.footerItem}>
+                        <Ionicons name="cash-outline" size={14} color={COLORS.TEXT_SECONDARY} />
+                        <Text style={styles.footerText}>{job.salary || 'Competitive'}</Text>
+                      </View>
+                      <View style={styles.footerItem}>
+                        <Ionicons name="time-outline" size={14} color={COLORS.TEXT_SECONDARY} />
+                        <Text style={styles.footerText}>{job.type || 'Full-time'}</Text>
+                      </View>
                     </View>
-                    <View style={styles.detailItem}>
-                      <Ionicons name="time-outline" size={14} color={COLORS.TEXT_SECONDARY} />
-                      <Text style={styles.detailText}>{job.type}</Text>
-                    </View>
-                    <View style={styles.detailItem}>
-                      <Ionicons name="calendar-outline" size={14} color={COLORS.TEXT_SECONDARY} />
-                      <Text style={styles.detailText}>{job.posted}</Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))
-            )}
-          </>
-        )}
-      </ScrollView>
+                  </TouchableOpacity>
+                </Animated.View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </SafeAreaView>
 
       <TouchableOpacity
-        style={styles.chatbotButton}
-        onPress={() => router.push('/chatbot' as any)}
+        style={styles.chatbotBtn}
+        onPress={() => router.push('/chatbot')}
       >
-        <Ionicons name="chatbubbles" size={24} color="#ffffff" />
+        <Ionicons name="chatbubbles" size={26} color={COLORS.WHITE} />
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  mainContainer: {
     flex: 1,
     backgroundColor: COLORS.BACKGROUND,
+  },
+  backgroundContainer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+    zIndex: -1,
+  },
+  bgCircle1: {
+    position: 'absolute',
+    width: screenWidth * 1.5,
+    height: screenWidth * 1.5,
+    borderRadius: screenWidth * 0.75,
+    backgroundColor: COLORS.PRIMARY + '05',
+    top: -screenWidth * 0.4,
+    right: -screenWidth * 0.2,
+  },
+  bgCircle2: {
+    position: 'absolute',
+    width: screenWidth,
+    height: screenWidth,
+    borderRadius: screenWidth * 0.5,
+    backgroundColor: COLORS.SECONDARY + '10',
+    bottom: -screenWidth * 0.2,
+    left: -screenWidth * 0.4,
+  },
+  safeArea: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: isSmallScreen ? 16 : 24,
-    paddingVertical: isSmallScreen ? 12 : 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.BORDER,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    justifyContent: 'space-between',
   },
   backButton: {
-    padding: 8,
-    marginRight: 8,
-  },
-  headerContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  headerIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.SECONDARY,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: COLORS.WHITE,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
   },
-  headerText: {
-    flex: 1,
+  headerTitleWrapper: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
   },
   headerTitle: {
-    fontSize: isSmallScreen ? 20 : 24,
+    fontSize: 20,
     fontWeight: '900',
     color: COLORS.TEXT_PRIMARY,
   },
-  headerSubtitle: {
-    fontSize: 12,
-    color: COLORS.TEXT_SECONDARY,
-    marginTop: 2,
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  searchContainer: {
-    paddingHorizontal: isSmallScreen ? 16 : 24,
-    paddingTop: 16,
-    paddingBottom: 12,
-  },
-  searchInputContainer: {
+  aiBadge: {
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.SECONDARY,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    gap: 3,
+  },
+  aiBadgeText: {
+    color: COLORS.WHITE,
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  searchSection: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  searchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.WHITE,
+    borderRadius: 20,
+    height: 56,
     paddingHorizontal: 16,
-    height: 48,
+    shadowColor: COLORS.PRIMARY,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    elevation: 3,
   },
   searchIcon: {
     marginRight: 12,
@@ -345,237 +351,176 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: COLORS.TEXT_PRIMARY,
-    padding: 0,
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: isSmallScreen ? 16 : 24,
-    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
   },
-  infoCard: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
-    borderRadius: 16,
-    padding: isSmallScreen ? 16 : 20,
-    marginTop: 20,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: COLORS.BORDER,
-    gap: 12,
-  },
-  infoIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.SECONDARY,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: COLORS.TEXT_PRIMARY,
-    marginBottom: 6,
-  },
-  infoText: {
+  resultsLabel: {
     fontSize: 13,
-    color: COLORS.TEXT_SECONDARY,
-    lineHeight: 18,
-  },
-  resultsText: {
-    fontSize: 14,
+    fontWeight: '800',
     color: COLORS.TEXT_SECONDARY,
     marginBottom: 16,
-    fontWeight: '600',
+    letterSpacing: 1,
+    marginLeft: 4,
   },
   jobCard: {
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
-    borderRadius: 16,
-    padding: isSmallScreen ? 16 : 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 28,
+    padding: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    shadowColor: COLORS.PRIMARY,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 2,
   },
-  cardTop: {
-    marginBottom: 12,
-  },
-  jobHeader: {
+  cardHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-    gap: 12,
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  jobIconContainer: {
+  iconBox: {
     width: 48,
     height: 48,
-    borderRadius: 12,
-    backgroundColor: COLORS.SECONDARY,
+    borderRadius: 16,
+    backgroundColor: COLORS.PRIMARY + '10',
     justifyContent: 'center',
     alignItems: 'center',
-    flexShrink: 0,
+    marginRight: 12,
   },
-  jobInfo: {
+  titleInfo: {
     flex: 1,
-    minWidth: 0,
   },
   jobTitle: {
-    fontSize: isSmallScreen ? 18 : 20,
+    fontSize: 17,
     fontWeight: '800',
     color: COLORS.TEXT_PRIMARY,
-    marginBottom: 4,
   },
-  jobCompany: {
-    fontSize: 14,
-    color: COLORS.TEXT_SECONDARY,
-  },
-  bookmarkButton: {
-    padding: 4,
-    flexShrink: 0,
-  },
-  matchContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-  },
-  matchBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.PRIMARY + '30',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    gap: 6,
-  },
-  matchText: {
+  companyName: {
     fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.PRIMARY,
+    color: COLORS.TEXT_SECONDARY,
+    fontWeight: '600',
   },
-  reasonBox: {
-    backgroundColor: COLORS.BACKGROUND,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: COLORS.BORDER,
+  saveBtn: {
+    padding: 8,
   },
-  reasonHeader: {
+  matchBarContainer: {
+    marginBottom: 16,
+  },
+  matchBarHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
     marginBottom: 8,
   },
-  reasonText: {
-    flex: 1,
-    fontSize: 13,
-    color: COLORS.TEXT_PRIMARY,
-    lineHeight: 18,
-  },
-  skillsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 8,
-  },
-  skillTag: {
-    backgroundColor: COLORS.SECONDARY,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.BORDER,
-  },
-  skillText: {
-    fontSize: 11,
-    fontWeight: '600',
+  matchPercent: {
+    fontSize: 14,
+    fontWeight: '800',
     color: COLORS.PRIMARY,
   },
-  jobDetails: {
+  matchSource: {
+    fontSize: 11,
+    color: COLORS.TEXT_SECONDARY,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  progressBarBg: {
+    height: 6,
+    backgroundColor: COLORS.SECONDARY,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: COLORS.PRIMARY,
+    borderRadius: 3,
+  },
+  tagWrapper: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 8,
+    marginBottom: 16,
   },
-  detailItem: {
+  skillTag: {
+    backgroundColor: COLORS.WHITE,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.CARD_BORDER,
+  },
+  skillTagText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.TEXT_SECONDARY,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    gap: 15,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.CARD_BORDER,
+  },
+  footerItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
   },
-  detailText: {
-    fontSize: 13,
+  footerText: {
+    fontSize: 12,
     color: COLORS.TEXT_SECONDARY,
+    fontWeight: '700',
+  },
+  loadingContainer: {
+    paddingTop: 100,
+    alignItems: 'center',
   },
   emptyState: {
     alignItems: 'center',
+    paddingTop: 60,
+  },
+  emptyIconCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: COLORS.PRIMARY + '10',
     justifyContent: 'center',
-    paddingVertical: 60,
+    alignItems: 'center',
+    marginBottom: 20,
   },
   emptyTitle: {
-    fontSize: isSmallScreen ? 20 : 24,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '900',
     color: COLORS.TEXT_PRIMARY,
-    marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
     color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
+    paddingHorizontal: 40,
+    lineHeight: 20,
   },
-  chatbotButton: {
+  chatbotBtn: {
     position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    bottom: 25,
+    right: 25,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: COLORS.PRIMARY,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 15,
     elevation: 8,
-    zIndex: 1000,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: COLORS.TEXT_SECONDARY,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  errorText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: COLORS.ERROR,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  retryButton: {
-    backgroundColor: COLORS.PRIMARY,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  retryButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
   },
 });

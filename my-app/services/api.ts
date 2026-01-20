@@ -62,7 +62,7 @@ const apiRequest = async (
     });
 
     if (error.message === 'Network request failed' || error.message?.includes('Network') || error.message?.includes('Failed to fetch')) {
-      throw new Error('Cannot connect to server. Please check:\\n1. Backend server is running on port 8085\\n2. Your device and computer are on the same network\\n3. Update EXPO_PUBLIC_API_URL in .env with your computer\'s IP address');
+      throw new Error('Cannot connect to server. Please check:\n1. Backend server is running on port 8085\n2. Your device and computer are on the same network\n3. Update EXPO_PUBLIC_API_URL in .env with your computer\'s IP address');
     }
 
     throw error;

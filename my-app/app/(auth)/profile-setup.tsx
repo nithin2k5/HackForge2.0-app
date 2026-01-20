@@ -1,5 +1,20 @@
 import { useState, useRef, useEffect } from 'react';
-import { ScrollView, View, Text, TextInput, TouchableOpacity, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions, BackHandler, Alert } from 'react-native';
+import {
+  ScrollView,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Pressable,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Dimensions,
+  BackHandler,
+  Alert,
+  StatusBar,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -7,6 +22,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { COLORS } from '@/constants/colors';
 import * as DocumentPicker from 'expo-document-picker';
 import { resumesApi } from '@/services/api';
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  FadeIn,
+  Layout,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
@@ -15,8 +39,6 @@ export default function ProfileSetupScreen() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
-  const inputLayouts = useRef<{ [key: string]: number }>({});
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -44,34 +66,25 @@ export default function ProfileSetupScreen() {
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       if (loading) return true;
-
       if (currentStep > 1) {
-        setCurrentStep((prev) => prev - 1);
-        setTimeout(() => {
-          scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-        }, 100);
-        return true;
-      } else {
-        router.back();
+        handleBack();
         return true;
       }
+      router.back();
+      return true;
     });
-
-    return () => {
-      backHandler.remove();
-    };
-  }, [currentStep, loading, router]);
+    return () => backHandler.remove();
+  }, [currentStep, loading]);
 
   const steps = [
-    { number: 1, title: 'PERSONAL INFO', icon: 'person' },
-    { number: 2, title: 'EXPERIENCE', icon: 'briefcase' },
-    { number: 3, title: 'PREFERENCES', icon: 'settings' },
-    { number: 4, title: 'RESUME', icon: 'document-text' },
+    { number: 1, title: 'Personal', icon: 'person' },
+    { number: 2, title: 'Experience', icon: 'briefcase' },
+    { number: 3, title: 'Preferences', icon: 'options' },
+    { number: 4, title: 'Resume', icon: 'document-attach' },
   ];
 
   const handleNext = () => {
     if (loading) return;
-
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
       scrollViewRef.current?.scrollTo({ y: 0, animated: true });
@@ -82,7 +95,6 @@ export default function ProfileSetupScreen() {
 
   const handleBack = () => {
     if (loading) return;
-
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
       scrollViewRef.current?.scrollTo({ y: 0, animated: true });
@@ -91,21 +103,8 @@ export default function ProfileSetupScreen() {
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
   const handleSubmit = async () => {
     if (loading) return;
-
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
     setLoading(true);
 
     try {
@@ -116,17 +115,14 @@ export default function ProfileSetupScreen() {
           formData.resumeFile.mimeType
         );
       }
-
       signIn();
-
-      timeoutRef.current = setTimeout(() => {
+      setTimeout(() => {
         setLoading(false);
         router.replace('/dashboard');
-        timeoutRef.current = null;
       }, 1500);
     } catch (err: any) {
       setLoading(false);
-      Alert.alert('Error', err.message || 'Failed to upload resume. Please try again.');
+      Alert.alert('Error', err.message || 'Failed to complete setup');
     }
   };
 
@@ -134,20 +130,9 @@ export default function ProfileSetupScreen() {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-        copyToCacheDirectory: true,
       });
-
-      if (result.canceled) {
-        return;
-      }
-
+      if (result.canceled) return;
       const file = result.assets[0];
-
-      if (file.size && file.size > 5 * 1024 * 1024) {
-        Alert.alert('Error', 'File size must be less than 5MB');
-        return;
-      }
-
       setFormData({
         ...formData,
         resume: file.name,
@@ -159,970 +144,518 @@ export default function ProfileSetupScreen() {
         },
       });
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to pick document');
+      Alert.alert('Error', 'Failed to pick document');
     }
   };
 
-  const handleInputFocus = (inputKey: string) => {
-    setTimeout(() => {
-      const y = inputLayouts.current[inputKey];
-      if (y !== undefined && scrollViewRef.current) {
-        scrollViewRef.current.scrollTo({ y: Math.max(0, y - 150), animated: true });
-      }
-    }, 100);
-  };
-
-  const handleInputLayout = (inputKey: string, event: any) => {
-    inputLayouts.current[inputKey] = event.nativeEvent.layout.y;
-  };
-
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <View style={styles.stepContent}>
-            <View style={styles.titleSection}>
-              <View style={styles.titleIconContainer}>
-                <Ionicons name="person" size={32} color={COLORS.PRIMARY} />
-              </View>
-              <Text style={[styles.stepTitle, isSmallScreen && styles.stepTitleSmall]}>
-                PERSONAL INFORMATION
-              </Text>
-              <Text style={[styles.stepDescription, isSmallScreen && styles.stepDescriptionSmall]}>
-                Let's start with the basics
-              </Text>
+  const renderStepIndicator = () => (
+    <View style={styles.indicatorWrapper}>
+      <View style={styles.indicatorContainer}>
+        {steps.map((step, index) => (
+          <View key={step.number} style={styles.stepItem}>
+            <View style={[
+              styles.stepCircle,
+              currentStep >= step.number ? styles.stepCircleActive : styles.stepCircleInactive,
+              currentStep === step.number && styles.stepCircleCurrent
+            ]}>
+              <Ionicons
+                name={currentStep > step.number ? 'checkmark' : (step.icon as any)}
+                size={18}
+                color={currentStep >= step.number ? COLORS.WHITE : COLORS.TEXT_SECONDARY}
+              />
             </View>
-
-            <View style={styles.formSection}>
-              <View
-                style={[styles.inputWrapper, isSmallScreen && styles.inputWrapperSmall]}
-                onLayout={(e) => handleInputLayout('fullName', e)}
-              >
-                <Text style={styles.inputLabel}>Full Name</Text>
-                <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="person-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, isSmallScreen && styles.inputSmall]}
-                    placeholder="Enter your full name"
-                    placeholderTextColor={COLORS.TEXT_SECONDARY}
-                    value={formData.fullName}
-                    onChangeText={(value) => setFormData({ ...formData, fullName: value })}
-                    autoCapitalize="words"
-                    editable={!loading}
-                    onFocus={() => handleInputFocus('fullName')}
-                  />
-                </View>
-              </View>
-
-              <View
-                style={[styles.inputWrapper, isSmallScreen && styles.inputWrapperSmall]}
-                onLayout={(e) => handleInputLayout('phone', e)}
-              >
-                <Text style={styles.inputLabel}>Phone Number</Text>
-                <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="call-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, isSmallScreen && styles.inputSmall]}
-                    placeholder="Enter your phone number"
-                    placeholderTextColor={COLORS.TEXT_SECONDARY}
-                    value={formData.phone}
-                    onChangeText={(value) => setFormData({ ...formData, phone: value })}
-                    keyboardType="phone-pad"
-                    editable={!loading}
-                    onFocus={() => handleInputFocus('phone')}
-                  />
-                </View>
-              </View>
-
-              <View
-                style={[styles.inputWrapper, isSmallScreen && styles.inputWrapperSmall]}
-                onLayout={(e) => handleInputLayout('location', e)}
-              >
-                <Text style={styles.inputLabel}>Location</Text>
-                <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="location-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, isSmallScreen && styles.inputSmall]}
-                    placeholder="City, Country"
-                    placeholderTextColor={COLORS.TEXT_SECONDARY}
-                    value={formData.location}
-                    onChangeText={(value) => setFormData({ ...formData, location: value })}
-                    editable={!loading}
-                    onFocus={() => handleInputFocus('location')}
-                  />
-                </View>
-              </View>
-
-              <View
-                style={[styles.inputWrapper, isSmallScreen && styles.inputWrapperSmall]}
-                onLayout={(e) => handleInputLayout('languages', e)}
-              >
-                <Text style={styles.inputLabel}>Languages</Text>
-                <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="language-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, isSmallScreen && styles.inputSmall]}
-                    placeholder="English, Spanish, French..."
-                    placeholderTextColor={COLORS.TEXT_SECONDARY}
-                    value={formData.languages}
-                    onChangeText={(value) => setFormData({ ...formData, languages: value })}
-                    editable={!loading}
-                    onFocus={() => handleInputFocus('languages')}
-                  />
-                </View>
-              </View>
-            </View>
+            {index < steps.length - 1 && (
+              <View style={[
+                styles.stepConnector,
+                currentStep > step.number ? styles.stepConnectorActive : styles.stepConnectorInactive
+              ]} />
+            )}
           </View>
-        );
+        ))}
+      </View>
+      <View style={styles.stepLabels}>
+        {steps.map((step) => (
+          <Text key={step.number} style={[
+            styles.stepLabelText,
+            currentStep === step.number && styles.stepLabelTextActive
+          ]}>
+            {step.title}
+          </Text>
+        ))}
+      </View>
+    </View>
+  );
 
-      case 2:
-        return (
-          <View style={styles.stepContent}>
-            <View style={styles.titleSection}>
-              <View style={styles.titleIconContainer}>
-                <Ionicons name="briefcase" size={32} color={COLORS.PRIMARY} />
-              </View>
-              <Text style={[styles.stepTitle, isSmallScreen && styles.stepTitleSmall]}>
-                EXPERIENCE & SKILLS
-              </Text>
-              <Text style={[styles.stepDescription, isSmallScreen && styles.stepDescriptionSmall]}>
-                Showcase your professional background
-              </Text>
-            </View>
-
-            <View style={styles.formSection}>
-              <View
-                style={[styles.inputWrapper, isSmallScreen && styles.inputWrapperSmall]}
-                onLayout={(e) => handleInputLayout('experience', e)}
-              >
-                <Text style={styles.inputLabel}>Years of Experience</Text>
-                <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="time-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, isSmallScreen && styles.inputSmall]}
-                    placeholder="e.g., 5"
-                    placeholderTextColor={COLORS.TEXT_SECONDARY}
-                    value={formData.experience}
-                    onChangeText={(value) => setFormData({ ...formData, experience: value })}
-                    keyboardType="number-pad"
-                    editable={!loading}
-                    onFocus={() => handleInputFocus('experience')}
-                  />
-                </View>
-              </View>
-
-              <View
-                style={[styles.inputWrapper, isSmallScreen && styles.inputWrapperSmall]}
-                onLayout={(e) => handleInputLayout('currentPosition', e)}
-              >
-                <Text style={styles.inputLabel}>Current Position</Text>
-                <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="briefcase-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, isSmallScreen && styles.inputSmall]}
-                    placeholder="Your current job title"
-                    placeholderTextColor={COLORS.TEXT_SECONDARY}
-                    value={formData.currentPosition}
-                    onChangeText={(value) => setFormData({ ...formData, currentPosition: value })}
-                    editable={!loading}
-                    onFocus={() => handleInputFocus('currentPosition')}
-                  />
-                </View>
-              </View>
-
-              <View
-                style={[styles.inputWrapper, isSmallScreen && styles.inputWrapperSmall]}
-                onLayout={(e) => handleInputLayout('skills', e)}
-              >
-                <Text style={styles.inputLabel}>Skills</Text>
-                <View style={[styles.textAreaContainer, isSmallScreen && styles.textAreaContainerSmall]}>
-                  <Ionicons name="code-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.textArea, isSmallScreen && styles.textAreaSmall]}
-                    placeholder="React, Node.js, Python, JavaScript..."
-                    placeholderTextColor={COLORS.TEXT_SECONDARY}
-                    value={formData.skills}
-                    onChangeText={(value) => setFormData({ ...formData, skills: value })}
-                    multiline
-                    numberOfLines={4}
-                    textAlignVertical="top"
-                    editable={!loading}
-                    onFocus={() => handleInputFocus('skills')}
-                  />
-                </View>
-              </View>
-
-              <View
-                style={[styles.inputWrapper, isSmallScreen && styles.inputWrapperSmall]}
-                onLayout={(e) => handleInputLayout('education', e)}
-              >
-                <Text style={styles.inputLabel}>Education</Text>
-                <View style={[styles.textAreaContainer, isSmallScreen && styles.textAreaContainerSmall]}>
-                  <Ionicons name="school-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.textArea, isSmallScreen && styles.textAreaSmall]}
-                    placeholder="Degree, University, Year"
-                    placeholderTextColor={COLORS.TEXT_SECONDARY}
-                    value={formData.education}
-                    onChangeText={(value) => setFormData({ ...formData, education: value })}
-                    multiline
-                    numberOfLines={3}
-                    textAlignVertical="top"
-                    editable={!loading}
-                    onFocus={() => handleInputFocus('education')}
-                  />
-                </View>
-              </View>
-
-              <View
-                style={[styles.inputWrapper, isSmallScreen && styles.inputWrapperSmall]}
-                onLayout={(e) => handleInputLayout('linkedin', e)}
-              >
-                <Text style={styles.inputLabel}>LinkedIn Profile <Text style={styles.optionalText}>(Optional)</Text></Text>
-                <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="logo-linkedin" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, isSmallScreen && styles.inputSmall]}
-                    placeholder="linkedin.com/in/yourprofile"
-                    placeholderTextColor={COLORS.TEXT_SECONDARY}
-                    value={formData.linkedin}
-                    onChangeText={(value) => setFormData({ ...formData, linkedin: value })}
-                    keyboardType="url"
-                    autoCapitalize="none"
-                    editable={!loading}
-                    onFocus={() => handleInputFocus('linkedin')}
-                  />
-                </View>
-              </View>
-
-              <View
-                style={[styles.inputWrapper, isSmallScreen && styles.inputWrapperSmall]}
-                onLayout={(e) => handleInputLayout('portfolio', e)}
-              >
-                <Text style={styles.inputLabel}>Portfolio/Website <Text style={styles.optionalText}>(Optional)</Text></Text>
-                <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="globe-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, isSmallScreen && styles.inputSmall]}
-                    placeholder="yourwebsite.com"
-                    placeholderTextColor={COLORS.TEXT_SECONDARY}
-                    value={formData.portfolio}
-                    onChangeText={(value) => setFormData({ ...formData, portfolio: value })}
-                    keyboardType="url"
-                    autoCapitalize="none"
-                    editable={!loading}
-                    onFocus={() => handleInputFocus('portfolio')}
-                  />
-                </View>
-              </View>
-            </View>
-          </View>
-        );
-
-      case 3:
-        return (
-          <View style={styles.stepContent}>
-            <View style={styles.titleSection}>
-              <View style={styles.titleIconContainer}>
-                <Ionicons name="settings" size={32} color={COLORS.PRIMARY} />
-              </View>
-              <Text style={[styles.stepTitle, isSmallScreen && styles.stepTitleSmall]}>
-                JOB PREFERENCES
-              </Text>
-              <Text style={[styles.stepDescription, isSmallScreen && styles.stepDescriptionSmall]}>
-                What are you looking for?
-              </Text>
-            </View>
-
-            <View style={styles.formSection}>
-              <View
-                style={[styles.inputWrapper, isSmallScreen && styles.inputWrapperSmall]}
-                onLayout={(e) => handleInputLayout('jobType', e)}
-              >
-                <Text style={styles.inputLabel}>Job Type</Text>
-                <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="briefcase-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, isSmallScreen && styles.inputSmall]}
-                    placeholder="Full-time, Part-time, Contract, Freelance"
-                    placeholderTextColor={COLORS.TEXT_SECONDARY}
-                    value={formData.jobType}
-                    onChangeText={(value) => setFormData({ ...formData, jobType: value })}
-                    editable={!loading}
-                    onFocus={() => handleInputFocus('jobType')}
-                  />
-                </View>
-              </View>
-
-              <View
-                style={[styles.inputWrapper, isSmallScreen && styles.inputWrapperSmall]}
-                onLayout={(e) => handleInputLayout('salaryExpectation', e)}
-              >
-                <Text style={styles.inputLabel}>Salary Expectation</Text>
-                <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="cash-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, isSmallScreen && styles.inputSmall]}
-                    placeholder="₹4L - ₹5.5L or Negotiable"
-                    placeholderTextColor={COLORS.TEXT_SECONDARY}
-                    value={formData.salaryExpectation}
-                    onChangeText={(value) => setFormData({ ...formData, salaryExpectation: value })}
-                    editable={!loading}
-                    onFocus={() => handleInputFocus('salaryExpectation')}
-                  />
-                </View>
-              </View>
-
-              <View
-                style={[styles.inputWrapper, isSmallScreen && styles.inputWrapperSmall]}
-                onLayout={(e) => handleInputLayout('availability', e)}
-              >
-                <Text style={styles.inputLabel}>Availability</Text>
-                <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="calendar-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, isSmallScreen && styles.inputSmall]}
-                    placeholder="Immediately, 2 weeks, 1 month"
-                    placeholderTextColor={COLORS.TEXT_SECONDARY}
-                    value={formData.availability}
-                    onChangeText={(value) => setFormData({ ...formData, availability: value })}
-                    editable={!loading}
-                    onFocus={() => handleInputFocus('availability')}
-                  />
-                </View>
-              </View>
-
-              <View
-                style={[styles.inputWrapper, isSmallScreen && styles.inputWrapperSmall]}
-                onLayout={(e) => handleInputLayout('workLocation', e)}
-              >
-                <Text style={styles.inputLabel}>Work Location</Text>
-                <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="location-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, isSmallScreen && styles.inputSmall]}
-                    placeholder="Remote, Hybrid, On-site"
-                    placeholderTextColor={COLORS.TEXT_SECONDARY}
-                    value={formData.workLocation}
-                    onChangeText={(value) => setFormData({ ...formData, workLocation: value })}
-                    editable={!loading}
-                    onFocus={() => handleInputFocus('workLocation')}
-                  />
-                </View>
-              </View>
-
-              <View
-                style={[styles.inputWrapper, isSmallScreen && styles.inputWrapperSmall]}
-                onLayout={(e) => handleInputLayout('workAuthorization', e)}
-              >
-                <Text style={styles.inputLabel}>Work Authorization</Text>
-                <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
-                  <Ionicons name="document-text-outline" size={20} color={COLORS.TEXT_SECONDARY} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, isSmallScreen && styles.inputSmall]}
-                    placeholder="US Citizen, H1B, OPT, etc."
-                    placeholderTextColor={COLORS.TEXT_SECONDARY}
-                    value={formData.workAuthorization}
-                    onChangeText={(value) => setFormData({ ...formData, workAuthorization: value })}
-                    editable={!loading}
-                    onFocus={() => handleInputFocus('workAuthorization')}
-                  />
-                </View>
-              </View>
-            </View>
-          </View>
-        );
-
-      case 4:
-        return (
-          <View style={styles.stepContent}>
-            <View style={styles.titleSection}>
-              <View style={styles.titleIconContainer}>
-                <Ionicons name="document-text" size={32} color={COLORS.PRIMARY} />
-              </View>
-              <Text style={[styles.stepTitle, isSmallScreen && styles.stepTitleSmall]}>
-                UPLOAD RESUME
-              </Text>
-              <Text style={[styles.stepDescription, isSmallScreen && styles.stepDescriptionSmall]}>
-                Upload your resume for better job matches
-              </Text>
-            </View>
-
-            <View style={styles.formSection}>
-              <Pressable
-                style={[styles.resumeUploadContainer, isSmallScreen && styles.resumeUploadContainerSmall]}
-                onPress={handleResumeUpload}
-                disabled={loading}
-              >
-                {formData.resume ? (
-                  <View style={styles.resumeUploaded}>
-                    <View style={styles.resumeIconContainer}>
-                      <Ionicons name="checkmark-circle" size={48} color={COLORS.PRIMARY} />
-                    </View>
-                    <Text style={[styles.resumeText, isSmallScreen && styles.resumeTextSmall]}>
-                      {formData.resume}
-                    </Text>
-                    <Text style={[styles.resumeSubtext, isSmallScreen && styles.resumeSubtextSmall]}>
-                      Tap to change file
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={styles.resumeUploadEmpty}>
-                    <View style={styles.resumeIconContainer}>
-                      <Ionicons name="cloud-upload-outline" size={48} color={COLORS.PRIMARY} />
-                    </View>
-                    <Text style={[styles.resumeText, isSmallScreen && styles.resumeTextSmall]}>
-                      TAP TO UPLOAD RESUME
-                    </Text>
-                    <Text style={[styles.resumeSubtext, isSmallScreen && styles.resumeSubtextSmall]}>
-                      PDF, DOC, DOCX (Max 5MB)
-                    </Text>
-                    <View style={styles.uploadHint}>
-                      <Ionicons name="information-circle-outline" size={16} color={COLORS.TEXT_SECONDARY} />
-                      <Text style={styles.uploadHintText}>Your resume helps us match you with better opportunities</Text>
-                    </View>
-                  </View>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        );
-
-      default:
-        return null;
-    }
-  };
+  const FormInput = ({ label, icon, value, onChangeText, placeholder, ...props }: any) => (
+    <View style={styles.inputWrapper}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <View style={styles.inputContainer}>
+        <Ionicons name={icon} size={20} color={COLORS.PRIMARY} style={styles.inputIcon} />
+        <TextInput
+          style={styles.input}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={COLORS.TEXT_SECONDARY + '80'}
+          {...props}
+        />
+      </View>
+    </View>
+  );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-      >
+    <View style={styles.mainContainer}>
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.backgroundContainer}>
+        <View style={styles.bgCircle1} />
+        <View style={styles.bgCircle2} />
+      </View>
+
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={handleBack}
-              disabled={loading || currentStep === 1}
-            >
-              <Ionicons
-                name="arrow-back"
-                size={24}
-                color={loading || currentStep === 1 ? '#cbd5e0' : COLORS.PRIMARY}
-              />
-            </TouchableOpacity>
-
-            <View style={styles.progressContainer}>
-              <Text style={styles.progressText}>
-                Step {currentStep} of {steps.length}
-              </Text>
-              <View style={styles.progressBar}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    { width: `${(currentStep / steps.length) * 100}%` }
-                  ]}
-                />
-              </View>
-            </View>
-
-            <View style={styles.headerSpacer} />
-          </View>
-
-          <View style={styles.stepsIndicator}>
-            {steps.map((step, index) => (
-              <View key={step.number} style={styles.stepItem}>
-                <View
-                  style={[
-                    styles.stepCircle,
-                    currentStep >= step.number && styles.stepCircleActive,
-                    currentStep === step.number && styles.stepCircleCurrent,
-                  ]}
-                >
-                  {currentStep > step.number ? (
-                    <Ionicons name="checkmark" size={18} color="#ffffff" />
-                  ) : (
-                    <Ionicons
-                      name={step.icon as any}
-                      size={currentStep === step.number ? 18 : 16}
-                      color={currentStep >= step.number ? '#ffffff' : COLORS.TEXT_SECONDARY}
-                    />
-                  )}
-                </View>
-                {index < steps.length - 1 && (
-                  <View
-                    style={[
-                      styles.stepConnector,
-                      currentStep > step.number && styles.stepConnectorActive,
-                    ]}
-                  />
-                )}
-              </View>
-            ))}
-          </View>
+          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.PRIMARY} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Build Your Profile</Text>
+          <View style={{ width: 44 }} />
         </View>
 
-        <ScrollView
-          ref={scrollViewRef}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-        >
-          <View style={styles.content}>
-            {renderStepContent()}
+        {renderStepIndicator()}
 
-            <View style={styles.buttonContainer}>
-              {currentStep > 1 && (
-                <Pressable
-                  style={[styles.backButtonStyle, isSmallScreen && styles.backButtonStyleSmall]}
-                  onPress={handleBack}
-                  disabled={loading}
-                >
-                  <Ionicons name="arrow-back" size={18} color={COLORS.PRIMARY} />
-                  <Text style={[styles.backButtonText, isSmallScreen && styles.backButtonTextSmall]}>
-                    BACK
-                  </Text>
-                </Pressable>
+        <KeyboardAvoidingView
+          style={styles.keyboardView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <ScrollView
+            ref={scrollViewRef}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <Animated.View
+              key={currentStep}
+              entering={FadeInDown.duration(600)}
+              style={styles.glassCard}
+            >
+              {currentStep === 1 && (
+                <View>
+                  <Text style={styles.cardTitle}>Personal Information</Text>
+                  <FormInput
+                    label="Full Name" icon="person-outline"
+                    value={formData.fullName}
+                    onChangeText={(v: any) => setFormData({ ...formData, fullName: v })}
+                    placeholder="Enter full name"
+                  />
+                  <FormInput
+                    label="Phone Number" icon="call-outline"
+                    value={formData.phone}
+                    onChangeText={(v: any) => setFormData({ ...formData, phone: v })}
+                    placeholder="+91 00000 00000"
+                    keyboardType="phone-pad"
+                  />
+                  <FormInput
+                    label="Location" icon="location-outline"
+                    value={formData.location}
+                    onChangeText={(v: any) => setFormData({ ...formData, location: v })}
+                    placeholder="City, Country"
+                  />
+                  <FormInput
+                    label="Languages" icon="language-outline"
+                    value={formData.languages}
+                    onChangeText={(v: any) => setFormData({ ...formData, languages: v })}
+                    placeholder="English, Hindi, etc."
+                  />
+                </View>
               )}
-              <Pressable
-                style={[
-                  styles.nextButton,
-                  loading && styles.nextButtonDisabled,
-                  isSmallScreen && styles.nextButtonSmall,
-                ]}
+
+              {currentStep === 2 && (
+                <View>
+                  <Text style={styles.cardTitle}>Professional Details</Text>
+                  <FormInput
+                    label="Years of Experience" icon="time-outline"
+                    value={formData.experience}
+                    onChangeText={(v: any) => setFormData({ ...formData, experience: v })}
+                    placeholder="e.g. 3"
+                    keyboardType="number-pad"
+                  />
+                  <FormInput
+                    label="Current Position" icon="briefcase-outline"
+                    value={formData.currentPosition}
+                    onChangeText={(v: any) => setFormData({ ...formData, currentPosition: v })}
+                    placeholder="e.g. Software Engineer"
+                  />
+                  <View style={styles.inputWrapper}>
+                    <Text style={styles.inputLabel}>Skills (comma separated)</Text>
+                    <View style={[styles.inputContainer, { height: 100, alignItems: 'flex-start', paddingTop: 12 }]}>
+                      <Ionicons name="code-slash-outline" size={20} color={COLORS.PRIMARY} style={styles.inputIcon} />
+                      <TextInput
+                        style={[styles.input, { height: '100%' }]}
+                        value={formData.skills}
+                        onChangeText={(v) => setFormData({ ...formData, skills: v })}
+                        placeholder="React, Node.js, Python..."
+                        placeholderTextColor={COLORS.TEXT_SECONDARY + '80'}
+                        multiline
+                      />
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {currentStep === 3 && (
+                <View>
+                  <Text style={styles.cardTitle}>Job Preferences</Text>
+                  <FormInput
+                    label="Expected Job Role" icon="rocket-outline"
+                    value={formData.jobType}
+                    onChangeText={(v: any) => setFormData({ ...formData, jobType: v })}
+                    placeholder="e.g. Fullstack Developer"
+                  />
+                  <FormInput
+                    label="Salary Expectation" icon="cash-outline"
+                    value={formData.salaryExpectation}
+                    onChangeText={(v: any) => setFormData({ ...formData, salaryExpectation: v })}
+                    placeholder="e.g. 15 LPA"
+                  />
+                  <FormInput
+                    label="Availability" icon="calendar-outline"
+                    value={formData.availability}
+                    onChangeText={(v: any) => setFormData({ ...formData, availability: v })}
+                    placeholder="Immediately / 1 Month"
+                  />
+                  <FormInput
+                    label="Work Mode" icon="home-outline"
+                    value={formData.workLocation}
+                    onChangeText={(v: any) => setFormData({ ...formData, workLocation: v })}
+                    placeholder="Remote / Hybrid / Onsite"
+                  />
+                </View>
+              )}
+
+              {currentStep === 4 && (
+                <View style={styles.resumeStep}>
+                  <Text style={styles.cardTitle}>Upload Resume</Text>
+                  <Text style={styles.cardSubtitle}>Our AI will analyze your resume for the best matches</Text>
+
+                  <TouchableOpacity
+                    style={[styles.resumeBox, formData.resume && styles.resumeBoxActive]}
+                    onPress={handleResumeUpload}
+                  >
+                    <Ionicons
+                      name={formData.resume ? "document-text" : "cloud-upload"}
+                      size={54}
+                      color={COLORS.PRIMARY}
+                    />
+                    <Text style={styles.resumeBoxTitle}>
+                      {formData.resume ? formData.resume : "Tap to Upload"}
+                    </Text>
+                    <Text style={styles.resumeBoxText}>PDF, DOCX up to 5MB</Text>
+                  </TouchableOpacity>
+
+                  {formData.resume && (
+                    <TouchableOpacity style={styles.removeBtn} onPress={() => setFormData({ ...formData, resume: null, resumeFile: null })}>
+                      <Text style={styles.removeBtnText}>Remove file</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </Animated.View>
+
+            <View style={styles.footer}>
+              {currentStep > 1 && (
+                <TouchableOpacity style={styles.backBtnStyle} onPress={handleBack}>
+                  <Text style={styles.backBtnText}>PREVIOUS</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={[styles.nextBtn, loading && styles.nextBtnDisabled]}
                 onPress={handleNext}
                 disabled={loading}
               >
                 {loading ? (
-                  <ActivityIndicator color={COLORS.TEXT_PRIMARY} size="small" />
+                  <ActivityIndicator color={COLORS.WHITE} />
                 ) : (
                   <>
-                    <Text style={[styles.nextButtonText, isSmallScreen && styles.nextButtonTextSmall]}>
-                      {currentStep === 4 ? 'COMPLETE SETUP' : 'CONTINUE'}
-                    </Text>
-                    <Ionicons
-                      name={currentStep === 4 ? 'checkmark-circle' : 'arrow-forward'}
-                      size={isSmallScreen ? 18 : 20}
-                      color="#ffffff"
-                    />
+                    <Text style={styles.nextBtnText}>{currentStep === 4 ? 'FINISH' : 'NEXT'}</Text>
+                    <Ionicons name="arrow-forward" size={20} color={COLORS.WHITE} />
                   </>
                 )}
-              </Pressable>
+              </TouchableOpacity>
             </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: COLORS.BACKGROUND,
+  },
+  backgroundContainer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+    zIndex: -1,
+  },
+  bgCircle1: {
+    position: 'absolute',
+    width: screenWidth * 1.5,
+    height: screenWidth * 1.5,
+    borderRadius: screenWidth * 0.75,
+    backgroundColor: COLORS.PRIMARY + '06',
+    top: -screenWidth * 0.4,
+    right: -screenWidth * 0.4,
+  },
+  bgCircle2: {
+    position: 'absolute',
+    width: screenWidth,
+    height: screenWidth,
+    borderRadius: screenWidth * 0.5,
+    backgroundColor: COLORS.SECONDARY + '10',
+    bottom: -screenWidth * 0.2,
+    left: -screenWidth * 0.3,
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
   },
   header: {
-    backgroundColor: COLORS.BACKGROUND,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.BORDER,
-    paddingTop: isSmallScreen ? 12 : 16,
-    paddingBottom: isSmallScreen ? 16 : 20,
-    paddingHorizontal: isSmallScreen ? 16 : 20,
-  },
-  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: isSmallScreen ? 12 : 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: COLORS.WHITE,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 20,
-    backgroundColor: COLORS.SECONDARY,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
   },
-  progressContainer: {
-    flex: 1,
-    paddingHorizontal: isSmallScreen ? 12 : 16,
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.TEXT_PRIMARY,
   },
-  progressText: {
-    fontSize: isSmallScreen ? 11 : 12,
-    fontWeight: '700',
-    color: COLORS.TEXT_SECONDARY,
-    marginBottom: 6,
-    textAlign: 'center',
-    letterSpacing: 0.5,
+  indicatorWrapper: {
+    paddingHorizontal: 24,
+    paddingVertical: 20,
   },
-  progressBar: {
-    height: 4,
-    borderColor: COLORS.BORDER,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: COLORS.PRIMARY,
-    borderRadius: 2,
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  stepsIndicator: {
+  indicatorContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: isSmallScreen ? 8 : 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
   },
   stepItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
   stepCircle: {
-    width: isSmallScreen ? 36 : 40,
-    height: isSmallScreen ? 36 : 40,
-    borderRadius: isSmallScreen ? 18 : 20,
-    backgroundColor: COLORS.SECONDARY,
-    borderWidth: 2,
-    borderColor: COLORS.BORDER,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    zIndex: 2,
   },
   stepCircleActive: {
     backgroundColor: COLORS.PRIMARY,
     borderColor: COLORS.PRIMARY,
   },
+  stepCircleInactive: {
+    backgroundColor: COLORS.WHITE,
+    borderColor: COLORS.CARD_BORDER,
+  },
   stepCircleCurrent: {
-    borderWidth: 3,
-    transform: [{ scale: 1.1 }],
+    shadowColor: COLORS.PRIMARY,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   stepConnector: {
-    width: isSmallScreen ? 24 : 32,
+    flex: 1,
     height: 2,
-    borderColor: COLORS.BORDER,
-    marginHorizontal: isSmallScreen ? 4 : 6,
+    marginHorizontal: 0,
+    zIndex: 1,
   },
   stepConnectorActive: {
     backgroundColor: COLORS.PRIMARY,
   },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: isSmallScreen ? 80 : 100,
+  stepConnectorInactive: {
+    backgroundColor: COLORS.CARD_BORDER,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: isSmallScreen ? 16 : 20,
-    paddingTop: isSmallScreen ? 24 : 32,
+  stepLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    paddingHorizontal: 0,
   },
-  stepContent: {
-    width: '100%',
-  },
-  titleSection: {
-    marginBottom: isSmallScreen ? 28 : 32,
-    alignItems: 'center',
-  },
-  titleIconContainer: {
-    width: isSmallScreen ? 64 : 72,
-    height: isSmallScreen ? 64 : 72,
-    borderRadius: isSmallScreen ? 32 : 36,
-    backgroundColor: COLORS.SECONDARY,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: isSmallScreen ? 16 : 20,
-  },
-  stepTitle: {
-    fontSize: isSmallScreen ? 26 : 30,
-    fontWeight: '900',
-    color: COLORS.PRIMARY,
-    marginBottom: 8,
-    letterSpacing: 0.5,
-    textAlign: 'center',
-  },
-  stepTitleSmall: {
-    fontSize: 24,
-    marginBottom: 6,
-  },
-  stepDescription: {
-    fontSize: isSmallScreen ? 15 : 16,
+  stepLabelText: {
+    fontSize: 11,
+    fontWeight: '700',
     color: COLORS.TEXT_SECONDARY,
-    fontWeight: '500',
-    lineHeight: isSmallScreen ? 20 : 22,
+    width: 50,
     textAlign: 'center',
-    paddingHorizontal: isSmallScreen ? 8 : 16,
   },
-  stepDescriptionSmall: {
+  stepLabelTextActive: {
+    color: COLORS.PRIMARY,
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  glassCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderRadius: 32,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    shadowColor: COLORS.PRIMARY,
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.08,
+    shadowRadius: 40,
+    elevation: 10,
+    minHeight: 400,
+  },
+  cardTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: COLORS.TEXT_PRIMARY,
+    marginBottom: 24,
+    letterSpacing: 0.5,
+  },
+  cardSubtitle: {
     fontSize: 14,
+    color: COLORS.TEXT_SECONDARY,
+    marginBottom: 30,
     lineHeight: 20,
   },
-  formSection: {
-    width: '100%',
-  },
   inputWrapper: {
-    marginBottom: isSmallScreen ? 20 : 24,
-    width: '100%',
-  },
-  inputWrapperSmall: {
-    marginBottom: 18,
+    marginBottom: 20,
   },
   inputLabel: {
-    fontSize: isSmallScreen ? 13 : 14,
+    fontSize: 13,
     fontWeight: '700',
-    color: COLORS.PRIMARY,
-    marginBottom: isSmallScreen ? 8 : 10,
-    letterSpacing: 0.3,
-  },
-  optionalText: {
-    fontSize: isSmallScreen ? 12 : 13,
-    fontWeight: '500',
-    color: '#718096',
+    color: COLORS.TEXT_SECONDARY,
+    marginBottom: 8,
+    marginLeft: 4,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: COLORS.BORDER,
-    marginBottom: 0,
-    paddingLeft: isSmallScreen ? 16 : 18,
-    paddingRight: isSmallScreen ? 16 : 18,
-    height: isSmallScreen ? 54 : 58,
-    minHeight: isSmallScreen ? 54 : 58,
-    width: '100%',
-    shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  inputContainerSmall: {
-    height: 52,
-    minHeight: 52,
-    paddingLeft: 14,
-    paddingRight: 14,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: 16,
+    height: 56,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: COLORS.CARD_BORDER,
   },
   inputIcon: {
-    marginRight: isSmallScreen ? 10 : 12,
-    flexShrink: 0,
+    marginRight: 12,
   },
   input: {
     flex: 1,
-    fontSize: isSmallScreen ? 15 : 16,
+    fontSize: 15,
     color: COLORS.TEXT_PRIMARY,
-    fontWeight: '500',
-    padding: 0,
-    margin: 0,
-    paddingLeft: 0,
-    paddingRight: 0,
-    includeFontPadding: false,
-    textAlignVertical: 'center',
+    fontWeight: '600',
   },
-  inputSmall: {
-    fontSize: 14,
-  },
-  textAreaContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: COLORS.BACKGROUND,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: COLORS.BORDER,
-    marginBottom: 0,
-    paddingLeft: isSmallScreen ? 16 : 18,
-    paddingRight: isSmallScreen ? 16 : 18,
-    paddingTop: isSmallScreen ? 16 : 18,
-    paddingBottom: isSmallScreen ? 16 : 18,
-    minHeight: isSmallScreen ? 110 : 120,
-    width: '100%',
-    shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  textAreaContainerSmall: {
-    paddingLeft: 14,
-    paddingRight: 14,
-    paddingTop: 14,
-    paddingBottom: 14,
-    minHeight: 100,
-  },
-  textArea: {
-    flex: 1,
-    fontSize: isSmallScreen ? 15 : 16,
-    color: COLORS.TEXT_PRIMARY,
-    fontWeight: '500',
-    minHeight: isSmallScreen ? 80 : 90,
-    padding: 0,
-    margin: 0,
-    paddingTop: 0,
-    paddingLeft: 0,
-    paddingRight: 0,
-    includeFontPadding: false,
-  },
-  textAreaSmall: {
-    fontSize: 14,
-    minHeight: 70,
-  },
-  resumeUploadContainer: {
-    backgroundColor: COLORS.BACKGROUND,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: COLORS.BORDER,
-    borderStyle: 'dashed',
-    padding: isSmallScreen ? 32 : 40,
+  resumeStep: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: isSmallScreen ? 8 : 12,
-    minHeight: isSmallScreen ? 240 : 280,
-    width: '100%',
-    shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  resumeUploadContainerSmall: {
-    padding: 28,
-    minHeight: 220,
-  },
-  resumeUploaded: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  resumeUploadEmpty: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  resumeIconContainer: {
-    width: isSmallScreen ? 88 : 100,
-    height: isSmallScreen ? 88 : 100,
-    borderRadius: isSmallScreen ? 44 : 50,
-    backgroundColor: COLORS.SECONDARY,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: isSmallScreen ? 20 : 24,
-  },
-  resumeText: {
-    fontSize: isSmallScreen ? 18 : 20,
-    fontWeight: '800',
-    color: COLORS.PRIMARY,
-    marginBottom: isSmallScreen ? 8 : 10,
-    textAlign: 'center',
-    letterSpacing: 0.5,
-  },
-  resumeTextSmall: {
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  resumeSubtext: {
-    fontSize: isSmallScreen ? 13 : 14,
-    color: COLORS.TEXT_SECONDARY,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  resumeSubtextSmall: {
-    fontSize: 12,
-  },
-  uploadHint: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: isSmallScreen ? 16 : 20,
-    paddingHorizontal: isSmallScreen ? 12 : 16,
-    paddingVertical: isSmallScreen ? 10 : 12,
-    backgroundColor: COLORS.SECONDARY,
-    borderRadius: 10,
-    maxWidth: '90%',
-  },
-  uploadHintText: {
-    fontSize: isSmallScreen ? 11 : 12,
-    color: COLORS.TEXT_SECONDARY,
-    marginLeft: 8,
-    fontWeight: '500',
-    lineHeight: isSmallScreen ? 16 : 18,
     flex: 1,
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    gap: isSmallScreen ? 10 : 12,
-    marginTop: isSmallScreen ? 32 : 40,
-    marginBottom: isSmallScreen ? 24 : 32,
+  resumeBox: {
     width: '100%',
-  },
-  backButtonStyle: {
-    flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
-    paddingVertical: isSmallScreen ? 16 : 18,
-    borderRadius: 14,
+    height: 200,
+    borderRadius: 24,
     borderWidth: 2,
     borderColor: COLORS.PRIMARY,
-    alignItems: 'center',
+    borderStyle: 'dashed',
+    backgroundColor: COLORS.PRIMARY + '05',
     justifyContent: 'center',
-    minHeight: isSmallScreen ? 52 : 56,
-    maxWidth: '100%',
+    alignItems: 'center',
+    padding: 20,
+  },
+  resumeBoxActive: {
+    borderStyle: 'solid',
+    backgroundColor: COLORS.PRIMARY + '10',
+  },
+  resumeBoxTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.TEXT_PRIMARY,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  resumeBoxText: {
+    fontSize: 12,
+    color: COLORS.TEXT_SECONDARY,
+    marginTop: 6,
+  },
+  removeBtn: {
+    marginTop: 20,
+    padding: 10,
+  },
+  removeBtnText: {
+    color: '#EF4444',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  footer: {
     flexDirection: 'row',
-    gap: 6,
-    shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    marginTop: 30,
+    gap: 15,
   },
-  backButtonStyleSmall: {
-    paddingVertical: 14,
-    minHeight: 50,
+  backBtnStyle: {
+    flex: 1,
+    height: 60,
+    borderRadius: 20,
+    backgroundColor: COLORS.WHITE,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: COLORS.CARD_BORDER,
   },
-  backButtonText: {
-    fontSize: isSmallScreen ? 15 : 16,
+  backBtnText: {
+    fontSize: 15,
     fontWeight: '800',
     color: COLORS.PRIMARY,
-    letterSpacing: 0.8,
+    letterSpacing: 1,
   },
-  backButtonTextSmall: {
-    fontSize: 14,
-    letterSpacing: 0.5,
-  },
-  nextButton: {
+  nextBtn: {
     flex: 2,
+    height: 60,
+    borderRadius: 20,
     backgroundColor: COLORS.PRIMARY,
-    paddingVertical: isSmallScreen ? 16 : 18,
-    borderRadius: 14,
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
-    minHeight: isSmallScreen ? 52 : 56,
-    maxWidth: '100%',
-    gap: 8,
+    alignItems: 'center',
     shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 8,
   },
-  nextButtonSmall: {
-    paddingVertical: 14,
-    minHeight: 50,
-    gap: 6,
+  nextBtnDisabled: {
+    opacity: 0.7,
   },
-  nextButtonDisabled: {
-    opacity: 0.6,
-  },
-  nextButtonText: {
-    color: '#ffffff',
-    fontSize: isSmallScreen ? 15 : 16,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-  },
-  nextButtonTextSmall: {
-    fontSize: 14,
-    letterSpacing: 0.5,
+  nextBtnText: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: COLORS.WHITE,
+    marginRight: 10,
+    letterSpacing: 1,
   },
 });

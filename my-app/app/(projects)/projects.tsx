@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_SECONDARY,
   },
   filterChipTextActive: {
-    color: '#ffffff',
+    color: COLORS.WHITE,
   },
   scrollView: {
     flex: 1,
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_SECONDARY,
   },
   matchBadge: {
-    backgroundColor: COLORS.PRIMARY + '30',
+    backgroundColor: COLORS.PRIMARY_LIGHT,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: COLORS.WHITE,
     fontSize: 16,
     fontWeight: '700',
   },

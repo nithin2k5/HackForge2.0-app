@@ -13,4 +13,19 @@ export const COLORS = {
   BORDER: '#E2E8F0',
   BACKGROUND: '#FFFFFF',
   BACKGROUND_LIGHT: '#F9FAFB',
+  WHITE: '#FFFFFF',
+  BLACK: '#000000',
+  TEXT_PLACEHOLDER: '#a0aec0',
+  TEXT_HINT: '#718096',
+  PRIMARY_LIGHT: 'rgba(4, 31, 43, 0.3)', // 30% opacity of PRIMARY
+  TRANSPARENT: 'transparent',
+
+  // Futuristic Design Tokens
+  GLASS_WHITE: 'rgba(255, 255, 255, 0.7)',
+  GLASS_PRIMARY: 'rgba(4, 31, 43, 0.05)',
+  CARD_BORDER: 'rgba(4, 31, 43, 0.1)',
+  CARD_GRADIENT: ['#FFFFFF', '#F8FAFC'],
+  GLOW: 'rgba(4, 31, 43, 0.15)',
+  CARD_RADIUS: 24,
+  SECTION_SPACING: 24,
 } as const;

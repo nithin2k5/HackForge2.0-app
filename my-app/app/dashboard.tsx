@@ -1,6 +1,19 @@
-import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions, TextInput, Pressable, Switch, ActivityIndicator } from 'react-native';
+import { useRef, useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  Image,
+  Pressable,
+  ActivityIndicator,
+  Switch,
+  TextInput,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeInDown, FadeInUp, FadeInRight, Layout } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +36,8 @@ export default function DashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [activeResume, setActiveResume] = useState<any>(null);
+  const [user, setUser] = useState<any>(null); // Added user state
+  const [dashboardData, setDashboardData] = useState<any>(null); // Added dashboardData state
   const router = useRouter();
   const { signOut } = useAuth();
 
@@ -43,6 +58,16 @@ export default function DashboardScreen() {
       ]);
 
       setUserProfile(profileRes);
+      setUser(profileRes); // Set user state
+      setDashboardData({ // Populate dashboardData
+        counts: {
+          active_applications: (Array.isArray(appsRes) ? appsRes : (appsRes.data || [])).length,
+          scheduled_interviews: (Array.isArray(interviewsRes) ? interviewsRes : (interviewsRes.data || [])).filter((i: any) => i.status === 'scheduled').length,
+          saved_jobs: (Array.isArray(savedRes) ? savedRes : (savedRes.data || [])).length,
+        },
+        recent_jobs: Array.isArray(jobsRes) ? jobsRes : (jobsRes.data || jobsRes.jobs || []),
+      });
+
 
       const allResumes = Array.isArray(resumesRes) ? resumesRes : [];
       const active = allResumes.find((r: any) => r.is_active);
@@ -133,117 +158,157 @@ export default function DashboardScreen() {
 
   const renderHomeContent = () => (
     <View style={styles.contentContainer}>
-      <View style={styles.welcomeCard}>
-        <Text style={styles.welcomeTitle}>Welcome Back!</Text>
-        <Text style={styles.welcomeSubtitle}>Here's what's happening with your job search</Text>
-      </View>
-
-      <View style={styles.statsContainer}>
-        <Pressable
-          style={styles.statCard}
-          onPress={() => router.push('/applications')}
-        >
-          <View style={styles.statIconContainer}>
-            <Ionicons name="briefcase" size={isSmallScreen ? 22 : 24} color={COLORS.PRIMARY} />
-          </View>
-          <Text style={styles.statNumber}>{stats.applications}</Text>
-          <Text style={styles.statLabel}>Applications</Text>
-        </Pressable>
-        <View style={styles.statCard}>
-          <View style={styles.statIconContainer}>
-            <Ionicons name="checkmark-circle" size={isSmallScreen ? 22 : 24} color={COLORS.PRIMARY} />
-          </View>
-          <Text style={styles.statNumber}>{stats.interviews}</Text>
-          <Text style={styles.statLabel}>Interviews</Text>
-        </View>
-        <View style={styles.statCard}>
-          <View style={styles.statIconContainer}>
-            <Ionicons name="star" size={isSmallScreen ? 22 : 24} color={COLORS.PRIMARY} />
-          </View>
-          <Text style={styles.statNumber}>{stats.saved}</Text>
-          <Text style={styles.statLabel}>Saved Jobs</Text>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recommended Jobs</Text>
-          <TouchableOpacity onPress={() => router.push('/jobs')}>
-            <Text style={styles.seeAllText}>See All</Text>
+      {/* Welcome Card */}
+      <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.welcomeCard}>
+        <View style={styles.welcomeInfo}>
+          <Text style={styles.welcomeTitle}>
+            Welcome back, {user?.name?.split(' ')[0] || 'Member'}! 👋
+          </Text>
+          <Text style={styles.welcomeSubtitle}>
+            Ready to take the next step in your career?
+          </Text>
+          <TouchableOpacity
+            style={styles.exploreButton}
+            onPress={() => router.push('/jobs')}
+          >
+            <Text style={styles.exploreButtonText}>Explore Jobs</Text>
+            <Ionicons name="arrow-forward" size={16} color="#ffffff" />
           </TouchableOpacity>
         </View>
+        <View style={styles.avatarContainer}>
+          <Image
+            source={{
+              uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+            }}
+            style={styles.avatar}
+          />
+        </View>
+      </Animated.View>
+
+      {/* Stats Bento Grid */}
+      <View style={styles.statsContainer}>
+        {/* Large Card: Active Applications */}
+        <Animated.View entering={FadeInDown.delay(300).duration(600)} style={styles.statCardLarge}>
+          <View style={styles.statInfoMain}>
+            <View style={styles.statIconContainerLarge}>
+              <Ionicons name="briefcase" size={28} color={COLORS.WHITE} />
+            </View>
+            <View>
+              <Text style={styles.statNumberLarge}>
+                {dashboardData?.counts.active_applications || 0}
+              </Text>
+              <Text style={styles.statLabelLarge}>Active Applications</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.statActionLarge}
+            onPress={() => {
+              router.push('/applications');
+            }}
+          >
+            <Ionicons name="arrow-forward" size={24} color={COLORS.WHITE} />
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Small Cards Row */}
+        <View style={styles.statRowSmall}>
+          <Animated.View entering={FadeInDown.delay(400).duration(600)} style={styles.statCardSmall}>
+            <View style={styles.statIconContainerSmall}>
+              <Ionicons name="calendar" size={20} color={COLORS.PRIMARY} />
+            </View>
+            <Text style={styles.statNumberSmall}>
+              {dashboardData?.counts.scheduled_interviews || 0}
+            </Text>
+            <Text style={styles.statLabelSmall}>Interviews</Text>
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.delay(500).duration(600)} style={styles.statCardSmall}>
+            <View style={styles.statIconContainerSmall}>
+              <Ionicons name="bookmark" size={20} color={COLORS.PRIMARY} />
+            </View>
+            <Text style={styles.statNumberSmall}>
+              {dashboardData?.counts.saved_jobs || 0}
+            </Text>
+            <Text style={styles.statLabelSmall}>Saved Jobs</Text>
+          </Animated.View>
+        </View>
+      </View>
+
+      <Animated.View entering={FadeInDown.delay(600).duration(600)} style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Jobs</Text>
+          <TouchableOpacity onPress={() => router.push('/jobs')}>
+            <Text style={styles.sectionLink}>See all</Text>
+          </TouchableOpacity>
+        </View>
+
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="small" color={COLORS.PRIMARY} />
             <Text style={styles.loadingText}>Loading jobs...</Text>
           </View>
-        ) : jobs.length === 0 ? (
+        ) : dashboardData?.recent_jobs.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="briefcase-outline" size={48} color={COLORS.TEXT_SECONDARY} />
             <Text style={styles.emptyText}>No jobs available</Text>
           </View>
         ) : (
-          jobs.slice(0, 2).map((job) => (
-            <Pressable
+          dashboardData?.recent_jobs.slice(0, 3).map((job: any, index: number) => (
+            <Animated.View
               key={job.id}
-              style={styles.jobCard}
-              onPress={() => {
-                router.push({
-                  pathname: '/job-detail',
-                  params: {
-                    id: job.id.toString(),
-                    title: job.title || '',
-                    company: job.company || '',
-                    location: job.location || '',
-                    salary: job.salary || '',
-                    match: job.match?.toString() || '0',
-                    type: job.type || '',
-                    posted: job.posted || '',
-                    icon: job.icon || getJobIcon(job.title || ''),
-                  },
-                });
-              }}
+              entering={FadeInRight.delay(600 + index * 100).duration(500)}
             >
-              <View style={styles.jobHeader}>
-                <View style={styles.jobIconContainer}>
-                  <Ionicons name={getJobIcon(job.title || '') as any} size={24} color={COLORS.PRIMARY} />
+              <TouchableOpacity
+                style={styles.jobCard}
+                onPress={() => {
+                  router.push({
+                    pathname: '/job-detail',
+                    params: {
+                      id: job.id.toString(),
+                      title: job.title || '',
+                      company: job.company || '',
+                      location: job.location || '',
+                      salary: job.salary || '',
+                      match: job.match?.toString() || '0',
+                      type: job.type || '',
+                      posted: job.posted || '',
+                      icon: job.icon || getJobIcon(job.title || ''),
+                    },
+                  });
+                }}
+              >
+                <View style={styles.jobHeader}>
+                  <View style={styles.companyLogo}>
+                    <Ionicons name="business" size={24} color={COLORS.PRIMARY} />
+                  </View>
+                  <View style={styles.jobInfo}>
+                    <Text style={styles.jobCardTitle}>{job.title || 'Job Title'}</Text>
+                    <Text style={styles.jobCardCompany}>
+                      {job.company || 'Company'} • {job.location || 'Location'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity style={styles.bookmarkButton} onPress={() => handleSaveJob(job.id)}>
+                    <Ionicons
+                      name={savedJobs.includes(job.id) ? 'bookmark' : 'bookmark-outline'}
+                      size={22}
+                      color={savedJobs.includes(job.id) ? COLORS.PRIMARY : COLORS.TEXT_SECONDARY}
+                    />
+                  </TouchableOpacity>
                 </View>
-                <View style={styles.jobInfo}>
-                  <Text style={styles.jobTitle}>{job.title || 'Job Title'}</Text>
-                  <Text style={styles.jobCompany}>{job.company || 'Company'}</Text>
+                <View style={styles.jobFooter}>
+                  {job.match && (
+                    <View style={styles.matchBadge}>
+                      <Ionicons name="sparkles" size={14} color={COLORS.PRIMARY} />
+                      <Text style={styles.matchText}>{job.match || 0}% Match</Text>
+                    </View>
+                  )}
+                  <Text style={styles.jobSalary}>{job.salary || 'Competitive'}</Text>
                 </View>
-                <TouchableOpacity onPress={() => handleSaveJob(job.id)}>
-                  <Ionicons
-                    name={savedJobs.includes(job.id) ? 'bookmark' : 'bookmark-outline'}
-                    size={24}
-                    color={savedJobs.includes(job.id) ? COLORS.PRIMARY : COLORS.TEXT_SECONDARY}
-                  />
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.jobDescription}>
-                {job.type || ''} • {job.location || ''} • {job.posted || ''}
-              </Text>
-              <View style={styles.jobFooter}>
-                {job.location && (
-                  <View style={styles.jobTag}>
-                    <Text style={styles.jobTagText}>{job.location}</Text>
-                  </View>
-                )}
-                {job.salary && (
-                  <View style={styles.jobTag}>
-                    <Text style={styles.jobTagText}>{job.salary}</Text>
-                  </View>
-                )}
-                {job.match && (
-                  <View style={styles.matchBadge}>
-                    <Text style={styles.matchText}>{job.match}% Match</Text>
-                  </View>
-                )}
-              </View>
-            </Pressable>
+              </TouchableOpacity>
+            </Animated.View>
           ))
         )}
-      </View>
+      </Animated.View>
     </View>
   );
 
@@ -255,7 +320,7 @@ export default function DashboardScreen() {
           <TextInput
             style={styles.searchInput}
             placeholder="Search jobs..."
-            placeholderTextColor="#a0aec0"
+            placeholderTextColor={COLORS.TEXT_PLACEHOLDER}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -312,8 +377,8 @@ export default function DashboardScreen() {
                 <Ionicons name={job.icon as any} size={24} color={COLORS.PRIMARY} />
               </View>
               <View style={styles.jobInfo}>
-                <Text style={styles.jobTitle}>{job.title}</Text>
-                <Text style={styles.jobCompany}>{job.company} • {job.location}</Text>
+                <Text style={styles.jobCardTitle}>{job.title || 'Job Title'}</Text>
+                <Text style={styles.jobCardCompany}>{job.company || 'Company'}</Text>
               </View>
               <TouchableOpacity onPress={() => handleSaveJob(job.id)}>
                 <Ionicons
@@ -533,8 +598,8 @@ export default function DashboardScreen() {
             <Switch
               value={notificationsEnabled}
               onValueChange={setNotificationsEnabled}
-              trackColor={{ false: '#e2e8f0', true: COLORS.PRIMARY }}
-              thumbColor="#ffffff"
+              trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
+              thumbColor={COLORS.WHITE}
             />
           </View>
           <View style={styles.settingsDivider} />
@@ -548,8 +613,8 @@ export default function DashboardScreen() {
             </View>
             <Switch
               value={true}
-              trackColor={{ false: '#e2e8f0', true: COLORS.PRIMARY }}
-              thumbColor="#ffffff"
+              trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
+              thumbColor={COLORS.WHITE}
             />
           </View>
         </View>
@@ -617,8 +682,8 @@ export default function DashboardScreen() {
             </View>
             <Switch
               value={false}
-              trackColor={{ false: '#e2e8f0', true: COLORS.PRIMARY }}
-              thumbColor="#ffffff"
+              trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
+              thumbColor={COLORS.WHITE}
             />
           </Pressable>
         </View>
@@ -674,7 +739,7 @@ export default function DashboardScreen() {
       </View>
 
       <Pressable style={styles.deleteAccountButton}>
-        <Ionicons name="trash-outline" size={20} color="#ef4444" />
+        <Ionicons name="trash-outline" size={20} color={COLORS.ERROR} />
         <Text style={styles.deleteAccountText}>Delete Account</Text>
       </Pressable>
     </View>
@@ -706,34 +771,32 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.mainContent}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={() => setDrawerOpen(!drawerOpen)}
-          >
-            <Ionicons name="menu" size={28} color={COLORS.PRIMARY} />
+        {/* Header */}
+        <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.header}>
+          <TouchableOpacity onPress={() => setDrawerOpen(true)} style={styles.menuButton}>
+            <Ionicons name="menu-outline" size={28} color={COLORS.PRIMARY} />
           </TouchableOpacity>
-          <View style={styles.headerContent}>
-            <View style={styles.logoContainer}>
-              <Ionicons name="briefcase" size={22} color={COLORS.PRIMARY} />
-            </View>
-            <Text style={styles.logoText}>GROEI</Text>
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>GROEI</Text>
           </View>
-          <TouchableOpacity style={styles.notificationButton} onPress={() => router.push('/notifications')}>
+          <TouchableOpacity
+            style={styles.notificationButton}
+            onPress={() => router.push('/notifications')}
+          >
             <Ionicons name="notifications-outline" size={24} color={COLORS.PRIMARY} />
             <View style={styles.notificationBadge}>
               <Text style={styles.notificationBadgeText}>3</Text>
             </View>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
-        <ScrollView
+        <Animated.ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           {renderContent()}
-        </ScrollView>
+        </Animated.ScrollView>
       </View>
 
       <TouchableOpacity
@@ -818,10 +881,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: isSmallScreen ? 16 : 20,
     paddingVertical: isSmallScreen ? 12 : 16,
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
+    backgroundColor: COLORS.WHITE,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.BORDER,
-    minHeight: 60,
+    borderBottomColor: COLORS.CARD_BORDER,
+    minHeight: 70,
   },
   menuButton: {
     width: 40,
@@ -850,6 +913,17 @@ const styles = StyleSheet.create({
     marginRight: isSmallScreen ? 8 : 12,
     padding: 0,
     flexShrink: 0,
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: isSmallScreen ? 24 : 26,
+    fontWeight: '900',
+    color: COLORS.PRIMARY,
+    letterSpacing: 2,
   },
   logoText: {
     fontSize: isSmallScreen ? 24 : 26,
@@ -883,7 +957,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.BORDER,
   },
   notificationBadgeText: {
-    color: '#ffffff',
+    color: COLORS.WHITE,
     fontSize: 10,
     fontWeight: '700',
   },
@@ -898,77 +972,159 @@ const styles = StyleSheet.create({
     paddingTop: isSmallScreen ? 16 : 20,
   },
   welcomeCard: {
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
-    borderRadius: 20,
-    padding: isSmallScreen ? 20 : 24,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: COLORS.CARD_RADIUS,
+    padding: isSmallScreen ? 24 : 28,
     marginBottom: isSmallScreen ? 20 : 24,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: COLORS.CARD_BORDER,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  welcomeInfo: {
+    flex: 1,
   },
   welcomeTitle: {
-    fontSize: isSmallScreen ? 26 : 30,
+    fontSize: isSmallScreen ? 28 : 32,
     fontWeight: '900',
     color: COLORS.PRIMARY,
     marginBottom: 8,
-    letterSpacing: 0.5,
+    letterSpacing: -0.5,
   },
   welcomeSubtitle: {
     fontSize: isSmallScreen ? 15 : 16,
     color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
-    lineHeight: isSmallScreen ? 20 : 22,
+    lineHeight: isSmallScreen ? 22 : 24,
+    opacity: 0.8,
+    marginBottom: 20,
+  },
+  exploreButton: {
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+  },
+  exploreButtonText: {
+    color: COLORS.WHITE,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  avatarContainer: {
+    width: isSmallScreen ? 80 : 100,
+    height: isSmallScreen ? 80 : 100,
+    borderRadius: isSmallScreen ? 40 : 50,
+    overflow: 'hidden',
+    marginLeft: 16,
+  },
+  avatar: {
+    width: '100%',
+    height: '100%',
   },
   statsContainer: {
     flexDirection: 'row',
-    gap: isSmallScreen ? 8 : 10,
-    marginBottom: isSmallScreen ? 20 : 24,
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: COLORS.SECTION_SPACING,
+  },
+  statCardLarge: {
     width: '100%',
+    height: 120,
+    backgroundColor: COLORS.PRIMARY,
+    borderRadius: COLORS.CARD_RADIUS,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  statCard: {
-    width: '31%', // Explicit width to ensure equal distribution
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
-    borderRadius: 16,
-    padding: isSmallScreen ? 12 : 16,
-    paddingHorizontal: 4,
-    borderWidth: 1,
-    borderColor: COLORS.BORDER,
-    alignItems: 'center',
-    justifyContent: 'center',
-    // minWidth: 0,
-    maxWidth: '100%',
     shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 6,
   },
-  statIconContainer: {
-    width: isSmallScreen ? 40 : 44,
-    height: isSmallScreen ? 40 : 44,
-    borderRadius: isSmallScreen ? 20 : 22,
-    backgroundColor: COLORS.SECONDARY,
+  statInfoMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  statActionLarge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: isSmallScreen ? 6 : 8,
   },
-  statNumber: {
-    fontSize: isSmallScreen ? 24 : 28,
+  statCardSmall: {
+    flex: 1,
+    height: 160,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: COLORS.CARD_RADIUS,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.CARD_BORDER,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.PRIMARY,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statRowSmall: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 12,
+  },
+  statIconContainerLarge: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statIconContainerSmall: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: COLORS.GLASS_PRIMARY,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statNumberLarge: {
+    fontSize: 40,
+    fontWeight: '900',
+    color: COLORS.WHITE,
+  },
+  statNumberSmall: {
+    fontSize: 28,
     fontWeight: '900',
     color: COLORS.PRIMARY,
-    marginBottom: 2,
+    marginBottom: 4,
   },
-  statLabel: {
-    fontSize: isSmallScreen ? 11 : 12,
+  statLabelLarge: {
+    fontSize: 16,
+    color: COLORS.WHITE,
+    fontWeight: '600',
+    opacity: 0.9,
+  },
+  statLabelSmall: {
+    fontSize: 13,
     color: COLORS.TEXT_SECONDARY,
     fontWeight: '600',
-    textAlign: 'center',
-    lineHeight: isSmallScreen ? 14 : 16,
   },
   section: {
     marginTop: 8,
@@ -985,6 +1141,11 @@ const styles = StyleSheet.create({
     color: COLORS.PRIMARY,
     letterSpacing: 0.3,
   },
+  sectionLink: {
+    fontSize: isSmallScreen ? 13 : 14,
+    fontWeight: '700',
+    color: COLORS.PRIMARY,
+  },
   seeAllText: {
     fontSize: isSmallScreen ? 13 : 14,
     fontWeight: '700',
@@ -992,16 +1153,16 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   jobCard: {
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
-    borderRadius: 18,
-    padding: isSmallScreen ? 16 : 20,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: COLORS.CARD_RADIUS,
+    padding: isSmallScreen ? 20 : 24,
     marginBottom: isSmallScreen ? 12 : 16,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: COLORS.CARD_BORDER,
     shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: 12,
     elevation: 3,
     width: '100%',
   },
@@ -1022,16 +1183,30 @@ const styles = StyleSheet.create({
   jobInfo: {
     flex: 1,
   },
-  jobTitle: {
+  jobCardTitle: {
     fontSize: isSmallScreen ? 17 : 18,
     fontWeight: '800',
     color: COLORS.PRIMARY,
     marginBottom: 4,
   },
-  jobCompany: {
+  jobCardCompany: {
     fontSize: isSmallScreen ? 13 : 14,
     color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
+  },
+  companyLogo: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: COLORS.SECONDARY,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  jobSalary: {
+    fontSize: isSmallScreen ? 14 : 15,
+    fontWeight: '700',
+    color: COLORS.PRIMARY,
   },
   jobDescription: {
     fontSize: isSmallScreen ? 13 : 14,
@@ -1058,6 +1233,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.PRIMARY,
   },
+  bookmarkButton: {
+    padding: 4,
+  },
   matchBadge: {
     marginLeft: 'auto',
     backgroundColor: COLORS.SECONDARY,
@@ -1079,7 +1257,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   applyButtonText: {
-    color: '#ffffff',
+    color: COLORS.WHITE,
     fontSize: isSmallScreen ? 14 : 15,
     fontWeight: '800',
     letterSpacing: 0.8,
@@ -1144,7 +1322,7 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_SECONDARY,
   },
   filterChipTextActive: {
-    color: '#ffffff',
+    color: COLORS.WHITE,
   },
   jobsList: {
     gap: 12,
@@ -1167,15 +1345,15 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   projectCard: {
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
-    borderRadius: 18,
-    padding: isSmallScreen ? 18 : 20,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: COLORS.CARD_RADIUS,
+    padding: isSmallScreen ? 18 : 24,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: COLORS.CARD_BORDER,
     shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 3,
   },
   projectHeader: {
@@ -1314,7 +1492,7 @@ const styles = StyleSheet.create({
   editProfileText: {
     fontSize: isSmallScreen ? 14 : 15,
     fontWeight: '800',
-    color: '#ffffff',
+    color: COLORS.WHITE,
     letterSpacing: 0.5,
   },
   profileSection: {
@@ -1328,15 +1506,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   profileInfoCard: {
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
-    borderRadius: 16,
-    padding: isSmallScreen ? 16 : 20,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: COLORS.CARD_RADIUS,
+    padding: isSmallScreen ? 16 : 24,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: COLORS.CARD_BORDER,
     shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
     elevation: 1,
   },
   profileInfoRow: {
@@ -1364,15 +1542,15 @@ const styles = StyleSheet.create({
   resumeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
-    borderRadius: 16,
-    padding: isSmallScreen ? 16 : 20,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: COLORS.CARD_RADIUS,
+    padding: isSmallScreen ? 16 : 24,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: COLORS.CARD_BORDER,
     shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
     elevation: 1,
   },
   resumeInfo: {
@@ -1401,14 +1579,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   settingsCard: {
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
-    borderRadius: 16,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: COLORS.CARD_RADIUS,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: COLORS.CARD_BORDER,
     shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
     elevation: 1,
     overflow: 'hidden',
   },
@@ -1470,7 +1648,7 @@ const styles = StyleSheet.create({
   deleteAccountText: {
     fontSize: isSmallScreen ? 15 : 16,
     fontWeight: '800',
-    color: '#ef4444',
+    color: COLORS.ERROR,
     letterSpacing: 0.5,
   },
   overlay: {
@@ -1488,13 +1666,15 @@ const styles = StyleSheet.create({
     left: 0,
     bottom: 0,
     width: DRAWER_WIDTH,
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     zIndex: 999,
     shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOffset: { width: 4, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
     elevation: 8,
+    borderRightWidth: 1,
+    borderRightColor: COLORS.CARD_BORDER,
   },
   drawerHeader: {
     paddingTop: 60,
@@ -1523,12 +1703,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   closeButton: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 16,
-    backgroundColor: COLORS.SECONDARY,
+    borderRadius: 18,
+    backgroundColor: COLORS.GLASS_PRIMARY,
   },
   drawerContent: {
     flex: 1,
@@ -1568,14 +1748,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.PRIMARY,
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: 18,
+    borderRadius: 16,
     gap: 8,
+    shadowColor: COLORS.PRIMARY,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   signOutText: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#ffffff',
+    color: COLORS.WHITE,
     letterSpacing: 0.5,
   },
   chatbotButton: {

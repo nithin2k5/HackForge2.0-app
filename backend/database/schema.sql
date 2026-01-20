@@ -1,6 +1,6 @@
-CREATE DATABASE IF NOT EXISTS hackforge_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS groei_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-USE hackforge_db;
+USE groei_db;
 
 CREATE TABLE IF NOT EXISTS companies (
   id INT AUTO_INCREMENT PRIMARY KEY,
